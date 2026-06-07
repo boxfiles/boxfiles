@@ -1,0 +1,8 @@
+name: shell-experience
+dependsOn:
+  - base.foundation
+steps:
+  - uses: symlink
+    with:
+      from: files/zshrc
+      to: ~/.zshrc

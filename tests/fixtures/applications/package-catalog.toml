@@ -1,0 +1,7 @@
+name = "package-catalog"
+dependsOn = ["base.foundation"]
+
+[[steps]]
+uses = "run"
+[steps.with]
+command = "echo would sync package catalog from files/package-list.yml"

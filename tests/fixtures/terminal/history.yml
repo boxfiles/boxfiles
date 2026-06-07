@@ -1,0 +1,8 @@
+name: terminal-history
+dependsOn:
+  - terminal.shell
+steps:
+  - uses: copy
+    with:
+      from: files/history/config.yml
+      to: ~/.config/mcfly/config.yml

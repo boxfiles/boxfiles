@@ -1,0 +1,7 @@
+name = "foundation"
+dependsOn = ["workstation"]
+
+[[steps]]
+uses = "run"
+[steps.with]
+command = "echo would prepare base workstation foundation"

@@ -1,0 +1,7 @@
+name = "local-containers"
+dependsOn = ["applications.package-catalog"]
+
+[[steps]]
+uses = "run"
+[steps.with]
+command = "echo would verify local container service"

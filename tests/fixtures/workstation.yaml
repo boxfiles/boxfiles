@@ -1,0 +1,6 @@
+name: workstation
+steps:
+  - uses: copy
+    with:
+      from: files/shared/welcome.json
+      to: ~/.config/boxfiles/welcome.json

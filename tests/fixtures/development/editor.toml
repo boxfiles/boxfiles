@@ -1,0 +1,8 @@
+name = "editor"
+dependsOn = ["development.source-control", "runtime.javascript"]
+
+[[steps]]
+uses = "copy"
+[steps.with]
+from = "files/editor-settings.json"
+to = "~/.config/Code/User/settings.json"

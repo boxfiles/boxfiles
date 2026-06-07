@@ -97,6 +97,12 @@ const RESERVED_ROOT_MANIFESTS = new Set([
     "boxfiles.yml",
     "boxfiles.toml",
 ]);
+const IGNORED_DISCOVERY_DIRECTORIES = new Set([
+    "node_modules",
+    "dist",
+    "build",
+    "coverage",
+]);
 
 export class ManifestService {
     constructor(
@@ -273,7 +279,7 @@ async function discoverManifestPaths(
         const entryPath = path.join(currentDir, entry.name);
         const isDir = entry.isDirectory();
 
-        if (isDir && entry.name === "files") {
+        if (isIgnoredDiscoveryDirectory(entry.name)) {
             continue;
         }
 
@@ -287,7 +293,7 @@ async function discoverManifestPaths(
         //TODO: allow symlinks but ensure we don't get into infinite loops. For now, just skip them.
         if (!entry.isFile()) continue;
 
-        if (!isManifestPath(rootDir, entryPath)) continue;
+        if (!(await isManifestPath(rootDir, entryPath))) continue;
 
         discovered.push(entryPath);
     }
@@ -324,6 +330,12 @@ async function isManifestPath(
     // If it is at the root, it must not be a reserved filename to be a manifest.
     // if it's a special filename at the root, it's not a manifest
     return !RESERVED_ROOT_MANIFESTS.has(path.basename(relativePath));
+}
+
+function isIgnoredDiscoveryDirectory(entryName: string): boolean {
+    if (entryName.startsWith(".")) return true;
+
+    return IGNORED_DISCOVERY_DIRECTORIES.has(entryName);
 }
 
 function parseManifestContent(manifestPath: string, content: string): unknown {
