@@ -4,17 +4,37 @@
  * Provides a typed store of facts gathered from system, user, and project sources.
  */
 
-export type FactSource = "system" | "user" | "project";
+import Type from "typebox";
 
-export type FactKey = string & { readonly __brand: "FactKey" };
-
-export type ContextFact = {
-  readonly key: FactKey;
-  readonly source: FactSource;
-  readonly value: unknown;
+type Brand<TBase, TBrand extends string> = TBase & {
+  readonly __brand: TBrand;
 };
 
-export type ContextSnapshot = Readonly<Record<string, unknown>>;
+const NonBlankStringSchema = Type.String({ pattern: ".*\\S.*" });
+
+const BrandedStringSchema = <TBrand extends string>() =>
+  Type.Unsafe<Brand<string, TBrand>>(NonBlankStringSchema);
+
+export const FactSourceSchema = Type.Union([
+  Type.Literal("system"),
+  Type.Literal("user"),
+  Type.Literal("project"),
+]);
+
+export const FactKeySchema = BrandedStringSchema<"FactKey">();
+
+export const ContextFactSchema = Type.Object({
+  key: Type.Readonly(FactKeySchema),
+  source: Type.Readonly(FactSourceSchema),
+  value: Type.Readonly(Type.Unknown()),
+});
+
+export const ContextSnapshotSchema = Type.Record(Type.String(), Type.Unknown());
+
+export type FactSource = Type.Static<typeof FactSourceSchema>;
+export type FactKey = Type.Static<typeof FactKeySchema>;
+export type ContextFact = Type.Static<typeof ContextFactSchema>;
+export type ContextSnapshot = Readonly<Type.Static<typeof ContextSnapshotSchema>>;
 
 export class ContextService {
   private readonly facts = new Map<FactKey, ContextFact>();
@@ -47,7 +67,9 @@ export class ContextService {
   }
 
   snapshot(): ContextSnapshot {
-    const entries = [...this.facts.values()].map((fact) => [fact.key, fact.value] as const);
+    const entries = [...this.facts.values()].map(
+      (fact) => [fact.key, fact.value] as const,
+    );
     return Object.fromEntries(entries);
   }
 }
