@@ -44,13 +44,19 @@ Various template language dls constructs will be available to the user within th
 ## Process
 
 1. exec boxfiles
-2. gather facts:
-  a. boxfile modules from fs
-  b. system facts: (env, osinfo, hardware, pkgs)
-  c. user facts: (homedir, username, groups, generated facts from ~/.config/boxfiles)
-  d. project facts: (pwd, upstreamrepo, generated facts from .boxfilesrc{yaml|toml})
-
-4. compile context: merge gathered facts  
-5. compile modules: interpolate facts into modules
-6. build module plan: resolve conditions and dependencies
+2. read boxfilesrc files in local and xdg config dir 
+3. gather manifests
+  1. glob manifest files from fs
+  2. gather facts, build context
+    a. boxfile modules from fs
+    b. system facts: (env, osinfo, hardware, pkgs)
+    c. user facts: (homedir, username, groups, generated facts from ~/.config/boxfiles)
+    d. project facts: (pwd, upstreamrepo, generated facts from .boxfilesrc{yaml|toml})
+    e. list of manifests 
+    f. facts from plugins
+4. compile context: merge gathered facts
+5. compile manifests: interpolate context with manifests,
+6. build plan: compute compiled manifests into action plan by resolving conditions and dependencies
 7. execute module plan.
+
+
