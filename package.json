@@ -1,0 +1,21 @@
+{
+  "name": "boxfiles",
+  "module": "index.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run index.ts",
+    "typecheck": "bunx tsc --noEmit",
+    "build": ".mise/tasks/build"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@crustjs/core": "^0.0.19",
+    "@crustjs/plugins": "^0.1.2",
+    "typebox": "^1.2.2"
+  }
+}
