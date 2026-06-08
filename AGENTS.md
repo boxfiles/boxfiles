@@ -17,35 +17,6 @@ Boxfiles is a Bun + TypeScript CLI/GUI for workstation provisioning: low-ceremon
 - Beware global mise config leakage on this machine: if `mise run` attempts unrelated global tool installs, validate task bodies directly with `.mise/tasks/<name>` and report the leakage.
 - Use TypeScript ES modules. Keep imports explicit and extensionless unless repo policy changes.
 
-## TypeScript rules
-
-- `strict` mode is enabled. Treat type errors as blockers.
-- MUST NOT use `any`. Use `unknown`, discriminated unions, branded IDs, generics, or explicit domain types.
-- MUST NOT weaken `tsconfig.json` strictness to make code pass.
-- MUST model domain concepts with strong types:
-  - manifest/module IDs
-  - dependency edges
-  - context facts
-  - plan steps
-  - action kinds and action inputs
-- Prefer `readonly` data where mutation is not required.
-- Prefer exhaustive `switch` over stringly branching. Use `never` exhaustiveness checks.
-
-## Nevernester style
-
-- Avoid deep nesting. Use guard clauses, early returns, extraction, and small pure functions.
-- MUST qualify cheapest failure paths first. return eearly on easiest output values, missing files, parse errors, failed conditions, etc.
-- Maximum practical nesting depth: 1 levels. If deeper, refactor before extending.
-- Keep functions focused on one decision or transformation.
-- Avoid hidden side effects in services. Parsing, planning, and execution should be separate phases.
-
-Current service boundaries:
-
-- `ContextService`: gathers and stores facts.
-- `Manifest`: opens/parses/validates manifest files.
-- `PlanService`: turns manifests + context into typed executable plan.
-
-Keep these boundaries unless you can explain why they are wrong.
 
 ## Plugin architecture
 
@@ -91,6 +62,37 @@ When reading/writing project plans, design notes, and long-lived decisions use `
 - Before changing behavior, identify current state, target state, and invariant being preserved.
 - Add or update tests when behavior becomes non-trivial.
 - Validate with observable output: typecheck, tests, or focused command execution.
+
+## TypeScript rules
+
+- `strict` mode is enabled. Treat type errors as blockers.
+- MUST NOT use `any`. Use `unknown`, discriminated unions, branded IDs, generics, or explicit domain types.
+- MUST NOT weaken `tsconfig.json` strictness to make code pass.
+- MUST model domain concepts with strong types:
+  - manifest/module IDs
+  - dependency edges
+  - context facts
+  - plan steps
+  - action kinds and action inputs
+- Prefer `readonly` data where mutation is not required.
+- Prefer exhaustive `switch` over stringly branching. Use `never` exhaustiveness checks.
+- Avoid destructuring fields from objects (prop params for example). Instead just access them via dot notation. This makes it easier to see the source of values and refactor types without changing call sites.
+
+## Nevernester style
+
+- Avoid deep nesting. Use guard clauses, early returns, extraction, and small pure functions.
+- MUST qualify cheapest failure paths first. return eearly on easiest output values, missing files, parse errors, failed conditions, etc.
+- Maximum practical nesting depth: 1 levels. If deeper, refactor before extending.
+- Keep functions focused on one decision or transformation.
+- Avoid hidden side effects in services. Parsing, planning, and execution should be separate phases.
+
+Current service boundaries:
+
+- `ContextService`: gathers and stores facts.
+- `Manifest`: opens/parses/validates manifest files.
+- `PlanService`: turns manifests + context into typed executable plan.
+
+Keep these boundaries unless you can explain why they are wrong.
 
 ## Prohibitions
 

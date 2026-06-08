@@ -209,10 +209,10 @@ async plan({ action, ctx }) {
 
 ## 8. Plan or apply
 
-Compile a plan:
+Compile a manifest plan:
 
 ```sh
-boxfiles plan
+boxfiles manifests plan
 ```
 
 Apply a manifest when ready:
