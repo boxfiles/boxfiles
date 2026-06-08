@@ -177,7 +177,7 @@ export class ManifestService {
         step: ManifestStepDto,
         index: number,
     ): ResolvedStep<unknown> {
-        const provider = this.pluginService.plugins[step.uses];
+        const provider = this.pluginService.getActionProvider(step.uses);
         if (!provider) {
             throw new Error(
                 `No provider registered for action kind: ${step.uses}`,

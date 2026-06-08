@@ -15,19 +15,44 @@ export const FactSourceSchema = Type.Union([
     Type.Literal("system"),
     Type.Literal("user"),
     Type.Literal("project"),
+    Type.Literal("plugin"),
+]);
+
+export const FactValueKindSchema = Type.Union([
+    Type.Literal("static"),
+    Type.Literal("computed"),
+]);
+
+export const FactCollisionSchema = Type.Union([
+    Type.Literal("error"),
+    Type.Literal("override"),
+    Type.Literal("keep-first"),
 ]);
 
 export const FactKeySchema = BrandedStringSchema<"FactKey">();
+
+export const FactMetadataSchema = Type.Object({
+    source: Type.Readonly(FactSourceSchema),
+    pluginId: Type.Readonly(Type.Optional(NonBlankStringSchema)),
+    providerId: Type.Readonly(Type.Optional(NonBlankStringSchema)),
+    valueKind: Type.Readonly(FactValueKindSchema),
+    sensitive: Type.Readonly(Type.Boolean()),
+    collision: Type.Readonly(FactCollisionSchema),
+});
 
 export const ContextFactSchema = Type.Object({
     key: Type.Readonly(FactKeySchema),
     source: Type.Readonly(FactSourceSchema),
     value: Type.Readonly(Type.Unknown()),
+    metadata: Type.Readonly(FactMetadataSchema),
 });
 
 export const ContextSnapshotSchema = Type.Record(Type.String(), Type.Unknown());
 
 export type FactSource = Type.Static<typeof FactSourceSchema>;
+export type FactValueKind = Type.Static<typeof FactValueKindSchema>;
+export type FactCollision = Type.Static<typeof FactCollisionSchema>;
+export type FactMetadata = Type.Static<typeof FactMetadataSchema>;
 export type FactKey = Type.Static<typeof FactKeySchema>;
 export type ContextFact = Type.Static<typeof ContextFactSchema>;
 export type ContextSnapshot = Readonly<
@@ -57,7 +82,23 @@ export class ContextService {
     }
 
     set(fact: ContextFact): void {
-        this.facts.set(fact.key, fact);
+        const existing = this.facts.get(fact.key);
+        if (!existing) {
+            this.facts.set(fact.key, fact);
+            return;
+        }
+
+        switch (fact.metadata.collision) {
+            case "error":
+                throw new Error(`Context fact already exists: ${fact.key}`);
+            case "keep-first":
+                return;
+            case "override":
+                this.facts.set(fact.key, fact);
+                return;
+            default:
+                assertNever(fact.metadata.collision);
+        }
     }
 
     get(key: FactKey): ContextFact | null {
@@ -70,4 +111,8 @@ export class ContextService {
         );
         return Object.fromEntries(entries);
     }
+}
+
+function assertNever(value: never): never {
+    throw new Error(`Unexpected fact collision policy: ${String(value)}`);
 }
