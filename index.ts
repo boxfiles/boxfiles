@@ -2,11 +2,13 @@ import { didYouMeanPlugin, helpPlugin, versionPlugin } from "@crustjs/plugins";
 import { app } from "./src/app";
 import { manifestCmd } from "./src/cmds/manifests";
 import { pluginsCmd } from "./src/cmds/plugins";
+import { boxfilesRuntimePlugin } from "./src/runtime";
 
 const cli = app
   .use(versionPlugin("0.0.0"))
   .use(didYouMeanPlugin({ mode: "help" }))
   .use(helpPlugin())
+  .use(boxfilesRuntimePlugin())
   .args([{ name: "cmd", type: "string", variadic: true }])
   .command(manifestCmd)
   .command(pluginsCmd)
@@ -44,9 +46,5 @@ function normalizeGlobalFlags(argv: readonly string[]): string[] {
   const commandIndex = remaining.findIndex((token) => !token.startsWith("-"));
   if (commandIndex === -1 || globalFlags.length === 0) return remaining;
 
-  return [
-    ...remaining.slice(0, commandIndex + 1),
-    ...globalFlags,
-    ...remaining.slice(commandIndex + 1),
-  ];
+  return [...remaining, ...globalFlags];
 }

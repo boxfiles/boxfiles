@@ -1,6 +1,5 @@
 import { app } from "../app";
-import { builtInPlugins } from "../providers";
-import { PluginService } from "../services/Plugins";
+import { getActiveRuntime } from "../runtime";
 import { markdownView } from "../views/markdown";
 
 export const pluginsCmd = app
@@ -13,21 +12,39 @@ export const pluginsCmd = app
       .meta({
         description: "List registered plugins and action providers.",
       })
-      .run(({ flags }) => {
-        listPlugins(flags.dir);
+      .run((input) => {
+        runPluginsCommand(() => {
+          listPlugins(input.flags.dir);
+        });
       }),
   )
-  .run(({ flags }) => {
-    listPlugins(flags.dir);
+  .run((input) => {
+    runPluginsCommand(() => {
+      listPlugins(input.flags.dir);
+    });
   });
 
+function runPluginsCommand(command: () => void): void {
+  try {
+    command();
+  } catch (error) {
+    process.exitCode = 1;
+    console.error(formatCommandError(error));
+  }
+}
+
+function formatCommandError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 function listPlugins(rootDir: string): void {
-  const pluginService = new PluginService(rootDir);
-  for (const plugin of builtInPlugins) {
-    pluginService.registerPlugin(plugin, "builtin");
+  const runtime = getActiveRuntime();
+  if (runtime.pluginService.rootDir !== rootDir) {
+    throw new Error(`Runtime root mismatch: expected ${rootDir}, got ${runtime.pluginService.rootDir}`);
   }
 
-  const plugins = pluginService.listPlugins();
+  const plugins = runtime.pluginService.listPlugins();
   if (plugins.length === 0) {
     console.log("No plugins registered.");
     return;
