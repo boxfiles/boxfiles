@@ -15,7 +15,7 @@ import {
 } from "../common/schema";
 import type { PluginService } from "./Plugins";
 import type { ContextSnapshot } from "./Context";
-import type { ExecutionPlanDto } from "./Plan";
+import type { ActionPlanDto, ExecutionPlanDto } from "./Plan";
 
 
 export const ManifestIdSchema = BrandedStringSchema<"ManifestId">();
@@ -114,20 +114,46 @@ const IGNORED_DISCOVERY_DIRECTORIES = new Set([
     "coverage",
 ]);
 
+export type ManifestDirectoryEntry = {
+    readonly name: string;
+    isDirectory(): boolean;
+    isFile(): boolean;
+};
+
+export type ManifestFileStat = {
+    isDirectory(): boolean;
+};
+
+export type ManifestFileSystem = {
+    readonly readFile: (filePath: string, encoding: "utf-8") => Promise<string>;
+    readonly readdir: (
+        dirPath: string,
+        options: { readonly withFileTypes: true },
+    ) => Promise<readonly ManifestDirectoryEntry[]>;
+    readonly stat: (filePath: string) => Promise<ManifestFileStat>;
+};
+
+const nodeManifestFileSystem: ManifestFileSystem = {
+    readFile: async (filePath, encoding) => await fs.readFile(filePath, encoding),
+    readdir: async (dirPath, options) => await fs.readdir(dirPath, options),
+    stat: async (filePath) => await fs.stat(filePath),
+};
 export class ManifestService {
     constructor(
         public readonly rootDir: string,
         private readonly pluginService: PluginService,
+        private readonly fileSystem: ManifestFileSystem = nodeManifestFileSystem,
     ) {}
 
     /**
      * Find all manifests recursively under rootDir.
-     * Excludes any path under a `files` directory and reserved root `boxfiles.*` files.
+     * Excludes fixture/build directories, any path under a `files` directory, and reserved root `boxfiles.*` files.
      */
     async discover(): Promise<readonly string[]> {
         const discovered = await discoverManifestPaths(
             this.rootDir,
             this.rootDir,
+            this.fileSystem,
         );
         return [...discovered].sort((left: string, right: string) =>
             left.localeCompare(right),
@@ -144,25 +170,44 @@ export class ManifestService {
         const paths = await this.discover();
         const manifests = await Promise.all(
             paths.map((manifestPath) =>
-                Manifest.load(this.rootDir, manifestPath),
+                Manifest.load(this.rootDir, manifestPath, this.fileSystem),
             ),
         );
         return manifests.map((manifest) => this.compileManifest(manifest));
     }
 
     /**
-     * Compute execution ordering for compiled manifests.
-     * Provider planning is not wired until plugin provider plan/apply contracts are finalized.
+     * Compute execution ordering for compiled manifests and provider action plans.
      */
     async plan(
         context: ManifestCompileContext = { facts: {} },
     ): Promise<ExecutionPlanDto> {
         const manifests = await this.compile(context);
         const orderedManifests = sortManifestsByDependencies(manifests);
+        const actions: ActionPlanDto[] = [];
+
+        for (const manifest of orderedManifests) {
+            for (const step of manifest.steps) {
+                const provider = this.pluginService.getActionProvider(step.uses);
+                if (provider === null) {
+                    throw new Error(`No provider registered for action kind: ${step.uses}`);
+                }
+
+                actions.push(await provider.plan({
+                    action: step,
+                    plan: null,
+                    ctx: {
+                        rootDir: this.rootDir,
+                        facts: context.facts,
+                        manifest: manifest.manifest,
+                    },
+                }));
+            }
+        }
 
         return {
             manifests: [...orderedManifests],
-            actions: [],
+            actions,
         };
     }
 
@@ -227,8 +272,9 @@ export class Manifest {
     static async load(
         rootDir: string,
         manifestPath: string,
+        fileSystem: ManifestFileSystem = nodeManifestFileSystem,
     ): Promise<Manifest> {
-        const content = await fs.readFile(manifestPath, "utf-8");
+        const content = await fileSystem.readFile(manifestPath, "utf-8");
         return new Manifest(rootDir, manifestPath, content);
     }
 
@@ -300,8 +346,9 @@ function manifestContextFromPath(
 async function discoverManifestPaths(
     rootDir: string,
     currentDir: string,
+    fileSystem: ManifestFileSystem,
 ): Promise<readonly string[]> {
-    const entries = await fs.readdir(currentDir, { withFileTypes: true });
+    const entries = await fileSystem.readdir(currentDir, { withFileTypes: true });
     const discovered: string[] = [];
 
     for (const entry of entries) {
@@ -314,7 +361,7 @@ async function discoverManifestPaths(
 
         if (isDir) {
             discovered.push(
-                ...(await discoverManifestPaths(rootDir, entryPath)),
+                ...(await discoverManifestPaths(rootDir, entryPath, fileSystem)),
             );
             continue;
         }
@@ -322,7 +369,7 @@ async function discoverManifestPaths(
         //TODO: allow symlinks but ensure we don't get into infinite loops. For now, just skip them.
         if (!entry.isFile()) continue;
 
-        if (!(await isManifestPath(rootDir, entryPath))) continue;
+        if (!(await isManifestPath(rootDir, entryPath, fileSystem))) continue;
 
         discovered.push(entryPath);
     }
@@ -333,8 +380,11 @@ async function discoverManifestPaths(
 /**
  * A manifest file path is any path that includes a `files` directory segment, which should be excluded from manifest discovery and parsing.
  */
-async function isFileAssetPath(filePath: string): Promise<boolean> {
-    const isDir = await fs.stat(filePath);
+async function isFileAssetPath(
+    filePath: string,
+    fileSystem: ManifestFileSystem,
+): Promise<boolean> {
+    const isDir = await fileSystem.stat(filePath);
     const parentPath = isDir.isDirectory() ? filePath : path.dirname(filePath);
 
     return parentPath.split(path.sep).includes("files");
@@ -343,6 +393,7 @@ async function isFileAssetPath(filePath: string): Promise<boolean> {
 async function isManifestPath(
     rootDir: string,
     manifestPath: string,
+    fileSystem: ManifestFileSystem,
 ): Promise<boolean> {
     // if it's not a yaml or toml file, it's not a manifest
     const extension = path.extname(manifestPath);
@@ -350,7 +401,7 @@ async function isManifestPath(
 
     // if it's under a files directory, it's not a manifest
     const relativePath = path.relative(rootDir, manifestPath);
-    if (await isFileAssetPath(manifestPath)) return false;
+    if (await isFileAssetPath(manifestPath, fileSystem)) return false;
 
     // at this point, if it's not at the root, it's a manifest.
     const isRoot = path.dirname(relativePath) === ".";
