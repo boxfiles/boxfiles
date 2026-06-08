@@ -22,6 +22,22 @@ A file that contains actions, dependencies and conditions.
 
 On disk, modules are treated as template language (like jinja) in order to support interpolation of facts into conditions, dependencies and actions.
 
+A manifest may have a sibling `files/` directory for source assets. Built-in `copy` actions resolve `from` relative to that manifest-local `files/` directory, so manifests reference asset names directly instead of adding `./files` prefixes.
+
+```text
+modules/git.yaml
+modules/files/gitconfig
+```
+
+```yaml
+steps:
+  - id: copy-gitconfig
+    uses: copy
+    with:
+      from: gitconfig
+      to: ~/.gitconfig
+```
+
 ### Action
 
 The smallest operating building block. It abstracts the OS-specific way of performing a common operation.

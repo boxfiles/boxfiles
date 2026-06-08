@@ -25,15 +25,33 @@ boxfiles -d ./modulename/childmodulename apply granchildmodulename
 BOXFILES_DIR=./modulename/childmodulename boxfiles apply granchildmodulename
 
 ## show manifests
-boxfiles manifests 
+boxfiles manifests
 boxfiles manifests files # show uncompiled, unplanned manifest list from current directory
 boxfiles manifests plan # show planned manifest list from current directory
 
-## show context 
+## show context
 boxfiles context # show context from current directory
 
 ## plugins
 boxfiles plugins # show all plugins
+```
+
+## Manifest file assets
+
+A manifest may have a sibling `files/` directory for source assets. Copy actions resolve `from` relative to that directory, so manifest authors do not write `./files` in manifests.
+
+```text
+modules/git.yaml
+modules/files/gitconfig
+```
+
+```yaml
+steps:
+  - id: copy-gitconfig
+    uses: copy
+    with:
+      from: gitconfig
+      to: ~/.gitconfig
 ```
 
 ## Built-in providers
