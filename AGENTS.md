@@ -16,6 +16,7 @@ Boxfiles is a Bun + TypeScript CLI/GUI for workstation provisioning: low-ceremon
 - If mise refuses to run tasks, trust the local config with `mise trust .mise/config.toml`.
 - Beware global mise config leakage on this machine: if `mise run` attempts unrelated global tool installs, validate task bodies directly with `.mise/tasks/<name>` and report the leakage.
 - Use TypeScript ES modules. Keep imports explicit and extensionless unless repo policy changes.
+
 ## TypeScript rules
 
 - `strict` mode is enabled. Treat type errors as blockers.
@@ -48,6 +49,10 @@ Keep these boundaries unless you can explain why they are wrong.
 
 ## CLI framework
 
+Framework: [CrustJS](https://github.com/chenxin-yan/crust/blob/main/apps/docs/content/docs/api/index.mdx)
+Language: TypeScript
+Compiler: Bun
+
 - Use **CrustJS** for CLI routing.
 - Root command currently has a variadic fallback `.run()` for unknown command-like args.
 - Known commands should be registered with `.command(name, cb)` and strongly typed args/flags.
@@ -55,6 +60,10 @@ Keep these boundaries unless you can explain why they are wrong.
 - Do not bypass Crust routing with ad-hoc `process.argv` parsing unless implementing a narrow compatibility shim.
 
 ## Planning memory
+
+Skill: `project-planning`
+Storage Strategy: `basic-memory`
+Basic Memory Project: `Boxfiles`
 
 When reading/writing project plans, design notes, and long-lived decisions use `project-planning` skill with the basic-memory storage strategy.
 
