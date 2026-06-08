@@ -4,5 +4,5 @@ dependsOn = ["base.foundation"]
 [[steps]]
 uses = "copy"
 [steps.with]
-from = "files/gitconfig"
+from = "gitconfig"
 to = "~/.gitconfig"

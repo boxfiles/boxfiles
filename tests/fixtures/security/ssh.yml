@@ -4,5 +4,5 @@ dependsOn:
 steps:
   - uses: copy
     with:
-      from: files/ssh/config
+      from: ssh/config
       to: ~/.ssh/config

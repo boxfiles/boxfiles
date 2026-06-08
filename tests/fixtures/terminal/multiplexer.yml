@@ -4,5 +4,5 @@ dependsOn:
 steps:
   - uses: symlink
     with:
-      from: files/zellij/config.kdl
+      from: zellij/config.kdl
       to: ~/.config/zellij/config.kdl

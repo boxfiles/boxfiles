@@ -4,5 +4,5 @@ dependsOn:
 steps:
   - uses: symlink
     with:
-      from: files/zshrc
+      from: zshrc
       to: ~/.zshrc

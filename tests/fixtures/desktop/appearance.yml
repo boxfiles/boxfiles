@@ -4,5 +4,5 @@ dependsOn:
 steps:
   - uses: copy
     with:
-      from: files/gtk/settings.ini
+      from: gtk/settings.ini
       to: ~/.config/gtk-3.0/settings.ini

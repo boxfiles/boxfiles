@@ -4,5 +4,5 @@ dependsOn:
 steps:
   - uses: copy
     with:
-      from: files/history/config.yml
+      from: history/config.yml
       to: ~/.config/mcfly/config.yml
