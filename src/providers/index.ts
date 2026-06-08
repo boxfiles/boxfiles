@@ -7,6 +7,7 @@ import ownership from "./ownership";
 import packages from "./packages";
 import permissions from "./permissions";
 import remove from "./remove";
+import run from "./run";
 import rename from "./rename";
 import storage from "./storage";
 import user from "./user";
@@ -22,6 +23,7 @@ export const builtInPlugins: readonly BoxfilePlugin[] = [
     packages,
     permissions,
     remove,
+    run,
     rename,
     storage,
     user,

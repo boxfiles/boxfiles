@@ -32,15 +32,15 @@ const removeActionProvider: ActionProvider<typeof RemoveConfigSchema> = {
         };
     },
 
-    async plan({ action }) {
-        const recursive = action.config.recursive === true;
-        const force = action.config.force === true;
+    async plan(input) {
+        const recursive = input.action.config.recursive === true;
+        const force = input.action.config.force === true;
 
         return {
-            actionId: action.id,
-            manifestId: action.manifestId,
-            kind: action.uses,
-            summary: `Remove ${action.config.path}`,
+            actionId: input.action.id,
+            manifestId: input.action.manifestId,
+            kind: input.action.uses,
+            summary: `Remove ${input.action.config.path}`,
             safety: {
                 idempotent: force,
                 unsafe: true,
@@ -50,7 +50,7 @@ const removeActionProvider: ActionProvider<typeof RemoveConfigSchema> = {
             },
             changes: [
                 {
-                    target: action.config.path,
+                    target: input.action.config.path,
                     operation: "delete",
                     before: undefined,
                     after: undefined,
@@ -60,9 +60,9 @@ const removeActionProvider: ActionProvider<typeof RemoveConfigSchema> = {
         };
     },
 
-    async apply({ action }) {
+    async apply(input) {
         return {
-            actionId: action.id,
+            actionId: input.action.id,
             success: false,
             message: "remove apply is not implemented yet",
         };

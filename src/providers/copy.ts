@@ -43,29 +43,29 @@ const copyActionProvider: ActionProvider<typeof CopyConfigSchema> = {
         };
     },
 
-    async plan({ action, ctx }) {
+    async plan(input) {
         const sourcePath = path.join(
-            ctx.rootDir,
-            ctx.manifest.filesDir,
-            action.config.from,
+            input.ctx.rootDir,
+            input.ctx.manifest.filesDir,
+            input.action.config.from,
         );
 
         return {
-            actionId: action.id,
-            manifestId: action.manifestId,
-            kind: action.uses,
-            summary: `Copy ${action.config.from} from manifest files to ${action.config.to}`,
+            actionId: input.action.id,
+            manifestId: input.action.manifestId,
+            kind: input.action.uses,
+            summary: `Copy ${input.action.config.from} from manifest files to ${input.action.config.to}`,
             safety: {
                 idempotent: true,
-                unsafe: action.config.overwrite === true,
-                reason: action.config.overwrite === true
+                unsafe: input.action.config.overwrite === true,
+                reason: input.action.config.overwrite === true
                     ? "copy may overwrite existing target"
                     : undefined,
             },
             changes: [
                 {
-                    target: action.config.to,
-                    operation: action.config.overwrite === true ? "update" : "create",
+                    target: input.action.config.to,
+                    operation: input.action.config.overwrite === true ? "update" : "create",
                     before: undefined,
                     after: {
                         source: sourcePath,
@@ -76,9 +76,9 @@ const copyActionProvider: ActionProvider<typeof CopyConfigSchema> = {
         };
     },
 
-    async apply({ action }) {
+    async apply(input) {
         return {
-            actionId: action.id,
+            actionId: input.action.id,
             success: false,
             message: "copy apply is not implemented yet",
         };
