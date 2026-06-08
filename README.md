@@ -15,7 +15,7 @@ mise use -g --pin github:zenobi-us/boxfiles
 ## help
 boxfiles --help
 
-## apply changes idepmotently to a module and all its children
+## apply changes idempotently to a module and all its children
 boxfiles apply modulename
 boxfiles apply modulename.childmodulename
 boxfiles apply modulename.childmodulename.granchildmodulename
@@ -35,6 +35,34 @@ boxfiles context # show context from current directory
 ## plugins
 boxfiles plugins # show all plugins
 ```
+
+## Built-in providers
+
+Boxfiles plugins are capability modules. Built-in providers live in:
+
+```text
+src/providers/{capability}.ts
+```
+
+Provider file basename should match plugin `id` for built-ins.
+
+Current action providers:
+
+- `copy`
+- `remove`
+- `link` TODO
+- `rename` TODO
+- `permissions` TODO
+- `ownership` TODO
+
+Current context providers:
+
+- `user` TODO
+- `os` TODO
+- `packages` TODO
+- `network` TODO
+- `storage` TODO
+- `gpu` TODO
 
 ## Development
 

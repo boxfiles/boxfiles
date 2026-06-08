@@ -47,6 +47,19 @@ Current service boundaries:
 
 Keep these boundaries unless you can explain why they are wrong.
 
+## Plugin architecture
+
+- Plugins are capability modules, not action-only providers.
+- Built-in providers MUST live at `src/providers/{capability}.ts`.
+- Built-in provider file basename SHOULD match plugin `id`.
+- Simple built-in action provider kind SHOULD match capability name.
+- `ActionProvider` MUST be generic over its TypeBox config schema so `validate()`, `plan()`, and `apply()` share one config type source.
+- Resolver functions MUST run during fact gathering, not template evaluation.
+- Resolver functions MUST NOT mutate workstation state.
+- Plugin context fact tokens MUST be namespaced by capability, for example `user.name` or `os.platform`.
+- Plugin fact collision default MUST be `error`.
+- Built-in apply functions MAY stay stubbed until execution confirmation and safety policy exists.
+
 ## CLI framework
 
 Framework: [CrustJS](https://github.com/chenxin-yan/crust/blob/main/apps/docs/content/docs/api/index.mdx)

@@ -24,17 +24,22 @@ On disk, modules are treated as template language (like jinja) in order to suppo
 
 ### Action
 
-The smallest operating building block. abstracts OS way of performing a common action, for example: 
+The smallest operating building block. It abstracts the OS-specific way of performing a common operation.
+
+### Plugin
+
+A capability module. It may provide actions, context facts, or both.
 
 ### Context
 
 A collection of derived facts about the current user and current system. These will can be used throughout a modules conditions, actions and dependencies.
 
-Context can come from three places:
+Context can come from four places:
 
 - System: facts about the system, such as osinfo, hardware, pkgs, env vars, etc.
 - User: facts about the user, such as homedir, username, groups, etc.
 - Project: facts about the project, such as pwd, upstreamrepo, etc.
+- Plugin: facts supplied by plugin context providers.
 
 A user can also generate facts by placing files in `~/.config/boxfiles` and `.boxfilesrc{yaml|toml}`. These files will be parsed and their contents will be added to the context as facts. The user can use these facts in their modules.
 
@@ -43,20 +48,18 @@ Various template language dls constructs will be available to the user within th
 
 ## Process
 
-1. exec boxfiles
-2. read boxfilesrc files in local and xdg config dir 
-3. gather manifests
-  1. glob manifest files from fs
-  2. gather facts, build context
-    a. boxfile modules from fs
-    b. system facts: (env, osinfo, hardware, pkgs)
-    c. user facts: (homedir, username, groups, generated facts from ~/.config/boxfiles)
-    d. project facts: (pwd, upstreamrepo, generated facts from .boxfilesrc{yaml|toml})
-    e. list of manifests 
-    f. facts from plugins
-4. compile context: merge gathered facts
-5. compile manifests: interpolate context with manifests,
-6. build plan: compute compiled manifests into action plan by resolving conditions and dependencies
-7. execute module plan.
+```text
+CLI load
+  -> read boxfilesrc files in local and xdg config dir
+  -> parse plugin modules
+  -> validate plugin shape
+  -> gather manifests
+  -> gather system/user/project/plugin facts
+  -> compile context snapshot
+  -> compile manifests/templates
+  -> resolve action providers
+  -> build plan from conditions and dependencies
+  -> execute confirmed plan
+```
 
 
