@@ -93,7 +93,9 @@ async function listManifestPlan(rootDir: string): Promise<void> {
 function assertRuntimeRoot(rootDir: string): void {
   const runtime = getActiveRuntime();
   if (runtime.rootDir === rootDir) return;
-  throw new Error(`Runtime root mismatch: expected ${rootDir}, got ${runtime.rootDir}`);
+  throw new Error(
+    `Runtime root mismatch: expected ${rootDir}, got ${runtime.rootDir}`,
+  );
 }
 
 function renderManifestPlan(plan: ExecutionPlanDto): string {
@@ -101,22 +103,28 @@ function renderManifestPlan(plan: ExecutionPlanDto): string {
     "## Manifest Plan\n",
     ...plan.manifests.flatMap((manifest, index) => [
       `### ${index + 1}. ${manifest.id}`,
-      `- path: ${manifest.path}`,
-      `- files: ${manifest.manifest.filesDir}`,
-      `- dependsOn: ${formatList(manifest.dependsOn)}`,
+      `- path: \`${manifest.path}\``,
+      `- files: \`${manifest.manifest.filesDir}\``,
+      ...renderList("- dependencies", manifest.dependsOn, (dep) => dep),
       `- steps: ${manifest.steps.length}`,
-      ...manifest.steps.map(
-        (step) =>
-          `  - ${step.id}: ${step.uses} ${stringifyConfig(step.config)}`,
-      ),
       "",
     ]),
   ].join("\n");
 }
 
-function formatList(values: readonly string[]): string {
-  if (values.length === 0) return "none";
-  return values.join(", ");
+function renderList<T>(
+  label: string,
+  items: T[],
+  render: (item: T) => string,
+): string[] {
+  if (items.length === 0) return [`- ${label}: 0`];
+
+  const output = [
+    `${label}: ${items.length}`,
+    ...items.map((item) => `  - ${render(item)}`),
+  ];
+
+  return output;
 }
 
 function stringifyConfig(config: unknown): string {
@@ -124,4 +132,3 @@ function stringifyConfig(config: unknown): string {
   if (serialized === undefined) return "{}";
   return serialized;
 }
-
