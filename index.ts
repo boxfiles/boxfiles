@@ -1,6 +1,7 @@
 import { didYouMeanPlugin, helpPlugin, versionPlugin } from "@crustjs/plugins";
 import { app } from "./src/app";
 import { manifestCmd } from "./src/cmds/manifests";
+import { pluginsCmd } from "./src/cmds/plugins";
 
 const cli = app
   .use(versionPlugin("0.0.0"))
@@ -8,16 +9,7 @@ const cli = app
   .use(helpPlugin())
   .args([{ name: "cmd", type: "string", variadic: true }])
   .command(manifestCmd)
-  .command("plan", (cmd) =>
-    cmd
-      .meta({ description: "Compile manifests into an execution plan." })
-      .run(() => {
-        console.log("plan: not implemented");
-      }),
-  )
-  .run(({ args }) => {
-    console.log("fallback:", args.cmd);
-  });
+  .command(pluginsCmd)
 
 await cli.execute({ argv: normalizeGlobalFlags(process.argv.slice(2)) });
 

@@ -19,7 +19,6 @@ import type { ContextSnapshot } from "./Context";
 export const ActionSafetySchema = Type.Object({
     idempotent: Type.Readonly(Type.Boolean()),
     unsafe: Type.Readonly(Type.Boolean()),
-    requiresConfirmation: Type.Readonly(Type.Boolean()),
     reason: Type.Readonly(Type.Optional(NonBlankStringSchema)),
 });
 

@@ -1,4 +1,5 @@
 import Type from "typebox";
+import * as path from "node:path";
 import Schema from "typebox/schema";
 import { NonBlankStringSchema } from "../common/schema";
 import {
@@ -26,22 +27,37 @@ const copyActionProvider: ActionProvider<typeof CopyConfigSchema> = {
             };
         }
 
+        const parsed = CopyConfigParser.Parse(config);
+        if (hasInvalidSourcePrefix(parsed.from)) {
+            return {
+                success: false,
+                errors: [
+                    "copy.from is relative to the manifest files directory; omit files/ prefix and parent traversal",
+                ],
+            };
+        }
+
         return {
             success: true,
-            value: CopyConfigParser.Parse(config),
+            value: parsed,
         };
     },
 
-    async plan({ action }) {
+    async plan({ action, ctx }) {
+        const sourcePath = path.join(
+            ctx.rootDir,
+            ctx.manifest.filesDir,
+            action.config.from,
+        );
+
         return {
             actionId: action.id,
             manifestId: action.manifestId,
             kind: action.uses,
-            summary: `Copy ${action.config.from} to ${action.config.to}`,
+            summary: `Copy ${action.config.from} from manifest files to ${action.config.to}`,
             safety: {
                 idempotent: true,
                 unsafe: action.config.overwrite === true,
-                requiresConfirmation: action.config.overwrite === true,
                 reason: action.config.overwrite === true
                     ? "copy may overwrite existing target"
                     : undefined,
@@ -52,9 +68,9 @@ const copyActionProvider: ActionProvider<typeof CopyConfigSchema> = {
                     operation: action.config.overwrite === true ? "update" : "create",
                     before: undefined,
                     after: {
-                        source: action.config.from,
+                        source: sourcePath,
                     },
-                    message: "copy file or directory",
+                    message: "copy file or directory from manifest files",
                 },
             ],
         };
@@ -68,6 +84,14 @@ const copyActionProvider: ActionProvider<typeof CopyConfigSchema> = {
         };
     },
 };
+
+function hasInvalidSourcePrefix(from: string): boolean {
+    const normalized = from.replaceAll("\\", "/").replace(/^\.\//, "");
+    if (path.isAbsolute(from)) return true;
+    if (normalized === "files" || normalized.startsWith("files/")) return true;
+    return normalized === ".." || normalized.startsWith("../");
+}
+
 
 export default createPlugin({
     id: "copy",

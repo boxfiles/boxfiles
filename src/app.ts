@@ -10,6 +10,7 @@ export const app = new Crust("boxfiles")
       short: "d",
       inherit: true,
       default: process.cwd(),
-      description: "Root directory to use for manifest discovery and execution.",
+      description:
+        "Root directory to use for manifest discovery and execution.",
     },
   });

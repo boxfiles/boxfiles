@@ -44,7 +44,6 @@ const removeActionProvider: ActionProvider<typeof RemoveConfigSchema> = {
             safety: {
                 idempotent: force,
                 unsafe: true,
-                requiresConfirmation: !force || recursive,
                 reason: recursive
                     ? "recursive remove may delete many files"
                     : "remove deletes workstation state",

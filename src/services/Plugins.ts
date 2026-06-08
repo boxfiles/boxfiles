@@ -1,7 +1,7 @@
 import Type from "typebox";
 import type { ContextFact, ContextService } from "./Context";
 import { type ContextSnapshot, ContextService as RuntimeContextService } from "./Context";
-import type { ResolvedStep } from "./Manifest";
+import type { ManifestContextDto, ResolvedStep } from "./Manifest";
 import type { ActionPlanDto } from "./Plan";
 
 export type ValidationResult<TConfig> =
@@ -17,6 +17,7 @@ export type ActionApplyResultDto = {
 export type ActionContext = {
     readonly rootDir: string;
     readonly facts: ContextSnapshot;
+    readonly manifest: ManifestContextDto;
 };
 
 export type ActionConfig<TConfigSchema extends Type.TSchema> =
@@ -75,6 +76,14 @@ export type PluginModule = {
     readonly default?: unknown;
 };
 
+export type PluginSource = "builtin" | "user" | "npm";
+export type PluginSummaryDto = {
+    readonly id: string;
+    readonly source: PluginSource;
+    readonly contextKeys: readonly string[];
+    readonly actionKinds: readonly string[];
+};
+
 /**
  * Public author API. Keeps plugin declaration low ceremony while preserving
  * inferred context/action keys in TypeScript.
@@ -90,6 +99,7 @@ export function createPlugin<
 export class PluginService {
     private readonly pluginRegistry = new Map<string, BoxfilePlugin>();
     private readonly actionProviders = new Map<string, ActionProvider<Type.TSchema>>();
+    private readonly pluginSources = new Map<string, PluginSource>();
 
     constructor(public readonly rootDir: string) {}
 
@@ -97,13 +107,14 @@ export class PluginService {
         return Object.fromEntries(this.actionProviders.entries());
     }
 
-    registerPlugin(plugin: BoxfilePlugin): void {
+    registerPlugin(plugin: BoxfilePlugin, source: PluginSource = "user"): void {
         assertPluginShape(plugin);
         if (this.pluginRegistry.has(plugin.id)) {
             throw new Error(`Plugin already registered: ${plugin.id}`);
         }
 
         this.pluginRegistry.set(plugin.id, plugin);
+        this.pluginSources.set(plugin.id, source);
         for (const provider of Object.values(plugin.actions ?? {})) {
             this.registerActionProvider(plugin.id, provider);
         }
@@ -117,6 +128,21 @@ export class PluginService {
 
     getActionProvider(kind: string): ActionProvider<Type.TSchema> | null {
         return this.actionProviders.get(kind) ?? null;
+    }
+
+    listPlugins(): readonly PluginSummaryDto[] {
+        return [...this.pluginRegistry.values()]
+            .map((plugin) => ({
+                id: plugin.id,
+                source: this.pluginSources.get(plugin.id) ?? "user",
+                contextKeys: Object.keys(plugin.context ?? {}).sort((left, right) =>
+                    left.localeCompare(right),
+                ),
+                actionKinds: Object.values(plugin.actions ?? {})
+                    .map((provider) => provider.kind)
+                    .sort((left, right) => left.localeCompare(right)),
+            }))
+            .sort((left, right) => left.id.localeCompare(right.id));
     }
 
     async gatherContextFacts(

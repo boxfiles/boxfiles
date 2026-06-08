@@ -77,9 +77,19 @@ export type ResolvedStep<TConfig = unknown> = Omit<
     readonly config: TConfig;
 };
 
+export const ManifestContextSchema = Type.Object({
+    id: Type.Readonly(ManifestIdSchema),
+    path: Type.Readonly(NonBlankStringSchema),
+    dir: Type.Readonly(NonBlankStringSchema),
+    filesDir: Type.Readonly(NonBlankStringSchema),
+});
+
+export type ManifestContextDto = Type.Static<typeof ManifestContextSchema>;
+
 export const CompiledManifestSchema = Type.Object({
     id: Type.Readonly(ManifestIdSchema),
     path: Type.Readonly(NonBlankStringSchema),
+    manifest: Type.Readonly(ManifestContextSchema),
     dependsOn: Type.Readonly(Type.Array(ManifestIdSchema)),
     when: Type.Readonly(Type.Optional(ConditionExpressionSchema)),
     steps: Type.Readonly(Type.Array(ResolvedUnknownStepSchema)),
@@ -159,6 +169,7 @@ export class ManifestService {
     private compileManifest(manifest: Manifest): CompiledManifestDto {
         const parsed = manifest.parse();
         const manifestId = manifest.id;
+        const context = manifestContextFromPath(this.rootDir, manifest.path, manifestId);
         const steps = parsed.steps.map((step, index) =>
             this.resolveStep(manifestId, step, index),
         );
@@ -166,6 +177,7 @@ export class ManifestService {
         return {
             id: manifestId,
             path: manifest.path,
+            manifest: context,
             dependsOn: parsed.dependsOn ?? [],
             when: parsed.when,
             steps,
@@ -266,6 +278,23 @@ function toStepId(value: string): StepId {
     }
 
     return id as StepId;
+}
+
+function manifestContextFromPath(
+    rootDir: string,
+    manifestPath: string,
+    manifestId: ManifestId,
+): ManifestContextDto {
+    const relativePath = path.relative(rootDir, manifestPath).split(path.sep).join("/");
+    const relativeDir = path.dirname(relativePath).split(path.sep).join("/");
+    const dir = relativeDir === "." ? "." : relativeDir;
+
+    return {
+        id: manifestId,
+        path: relativePath,
+        dir,
+        filesDir: dir === "." ? "files" : `${dir}/files`,
+    };
 }
 
 async function discoverManifestPaths(

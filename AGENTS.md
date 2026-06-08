@@ -58,7 +58,7 @@ Keep these boundaries unless you can explain why they are wrong.
 - Resolver functions MUST NOT mutate workstation state.
 - Plugin context fact tokens MUST be namespaced by capability, for example `user.name` or `os.platform`.
 - Plugin fact collision default MUST be `error`.
-- Built-in apply functions MAY stay stubbed until execution confirmation and safety policy exists.
+- Built-in apply functions MAY stay stubbed until execution safety policy exists.
 
 ## CLI framework
 
