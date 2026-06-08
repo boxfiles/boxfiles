@@ -2,58 +2,58 @@ import * as path from "node:path";
 import { app } from "../app";
 import { manifestIdFromPath, ManifestService } from "../services/Manifest";
 import { PluginService } from "../services/Plugins";
-import { fileTreeView } from "../views/markdown";
-
-const manifestArgs = [
-  {
-    name: "manifest",
-    type: "string",
-    description:
-      "Optional manifest id to list from, e.g. desktop or desktop.shell.",
-  },
-] as const;
+import { markdownView } from "../views/markdown";
 
 export const manifestCmd = app
   .sub("manifests")
   .meta({
-    description: "List discovered boxfile manifests.",
+    description: "Inspect discovered boxfile manifests.",
   })
-  .args(manifestArgs)
-  .run(async ({ args, flags }) => {
-    const rootDir = flags.dir;
-    const pluginService = new PluginService(rootDir);
-    const manifestService = new ManifestService(rootDir, pluginService);
-    const manifestPaths = await manifestService.discover();
-    const targetManifest = args.manifest;
-    const rows = manifestPaths
-      .map((manifestPath) => {
-        const relativePath = path.relative(rootDir, manifestPath);
-        const id = manifestIdFromPath(rootDir, manifestPath);
-
-        return {
-          id,
-          path: relativePath,
-          label: `${path.basename(relativePath)} (${id})`,
-        };
+  .command("files", (cmd) =>
+    cmd
+      .meta({
+        description: "List discovered boxfile manifest files.",
       })
-      .filter((manifest) => isRequestedManifest(manifest.id, targetManifest));
+      .run(async ({ flags }) => {
+        await listManifestFiles(flags.dir);
+      }),
+  )
+  .command("plan", (cmd) =>
+    cmd
+      .meta({
+        description: "Show planned manifest list.",
+      })
+      .run(() => {
+        throw new Error("Not implemented yet.");
+      }),
+  );
 
-    if (rows.length === 0) {
-      console.log("No manifests found.");
-      return;
-    }
+async function listManifestFiles(rootDir: string): Promise<void> {
+  const pluginService = new PluginService(rootDir);
+  const manifestService = new ManifestService(rootDir, pluginService);
+  const manifestPaths = await manifestService.discover();
+  const rows = manifestPaths.map((manifestPath) => {
+    const relativePath = path.relative(rootDir, manifestPath);
+    const id = manifestIdFromPath(rootDir, manifestPath);
 
-    console.log(fileTreeView(rows));
+    return {
+      id,
+      path: relativePath,
+    };
   });
 
-function isRequestedManifest(
-  manifestId: string,
-  requestedManifest: string | undefined,
-): boolean {
-  if (requestedManifest === undefined) return true;
+  if (rows.length === 0) {
+    console.log("No manifests found.");
+    return;
+  }
 
-  const requested = requestedManifest.trim();
-  if (requested.length === 0) return true;
-
-  return manifestId === requested || manifestId.startsWith(`${requested}.`);
+  console.log(
+    markdownView(
+      [
+        "## Discovered Manifests\n",
+        ...rows.map((row) => `- [${row.id}](${row.path})`),
+      ].join("\n"),
+    ),
+  );
 }
+

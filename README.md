@@ -5,6 +5,10 @@
 - releases tab
 - download the latest release for your platform
 
+```sh
+mise use -g --pin github:zenobi-us/boxfiles
+```
+
 ## Usage
 
 ```sh
@@ -15,13 +19,15 @@ boxfiles --help
 boxfiles apply modulename
 boxfiles apply modulename.childmodulename
 boxfiles apply modulename.childmodulename.granchildmodulename
+
 # start module tree at a specific path
 boxfiles -d ./modulename/childmodulename apply granchildmodulename
+BOXFILES_DIR=./modulename/childmodulename boxfiles apply granchildmodulename
 
 ## show manifests
-boxfiles manifests # show module tree from current directory
-boxfiles manifests modulename
-boxfiles manifests modulename.childmodulename # show module tree starting at modulename.childmodulename
+boxfiles manifests 
+boxfiles manifests files # show uncompiled, unplanned manifest list from current directory
+boxfiles manifests plan # show planned manifest list from current directory
 
 ## show context 
 boxfiles context # show context from current directory
