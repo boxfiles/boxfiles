@@ -1,7 +1,7 @@
 import { app } from "../app";
 import { formatCommandError } from "../common/console";
 import { getActiveRuntime } from "../runtime";
-import { RuntimeRootMismatchError } from "@zenobius/boxfiles-core";
+import { RuntimeRootMismatchError } from "@boxfiles/core";
 import { markdownView } from "../views/markdown";
 
 export const pluginsCmd = app

@@ -1,4 +1,4 @@
-import { createPlugin } from "@zenobius/boxfiles-core";
+import { createPlugin } from "@boxfiles/core";
 
 export default createPlugin({
     id: "os",

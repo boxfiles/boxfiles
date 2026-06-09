@@ -10,7 +10,7 @@ import type {
   ManifestContextDto,
   ManifestId,
   StepId,
-} from "@zenobius/boxfiles-core";
+} from "@boxfiles/core";
 
 describe("renderManifestList", () => {
   test("renders flat manifest entries", () => {

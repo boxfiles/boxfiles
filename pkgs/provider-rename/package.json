@@ -1,5 +1,5 @@
 {
-  "name": "@zenobius/boxfiles-provider-rename",
+  "name": "@boxfiles/provider-rename",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -7,7 +7,7 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@zenobius/boxfiles-core": "workspace:*",
+    "@boxfiles/core": "workspace:*",
     "typebox": "^1.2.2"
   },
   "devDependencies": {

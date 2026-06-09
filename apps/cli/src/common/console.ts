@@ -1,6 +1,6 @@
 import { IsValidationError } from "typebox/error";
 import type { TValidationError } from "typebox/error";
-import { ManifestError } from "@zenobius/boxfiles-core";
+import { ManifestError } from "@boxfiles/core";
 
 export function renderList<T>(
   label: string,

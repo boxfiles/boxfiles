@@ -1,5 +1,5 @@
 {
-  "name": "@zenobius/boxfiles-core",
+  "name": "@boxfiles/core",
   "version": "0.0.1",
   "private": true,
   "type": "module",
@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "@zenobius/boxfiles-provider-copy": "workspace:*",
+    "@boxfiles/provider-copy": "workspace:*",
     "memfs": "^4.57.6",
     "typescript": "^5"
   }

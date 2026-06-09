@@ -9,7 +9,7 @@ import {
   ManifestSchema,
   RuntimeRootMismatchError,
   UnknownSchemaNameError,
-} from "@zenobius/boxfiles-core";
+} from "@boxfiles/core";
 import { markdownView } from "../views/markdown";
 
 const SCHEMA_DRAFT_URL = "https://json-schema.org/draft/2020-12/schema";

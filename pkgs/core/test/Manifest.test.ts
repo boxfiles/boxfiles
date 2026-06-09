@@ -7,7 +7,7 @@ import {
   type ManifestDirectoryEntry,
   type ManifestFileSystem,
   PluginService,
-} from "@zenobius/boxfiles-core";
+} from "@boxfiles/core";
 
 type ManifestTestHarness = {
   readonly rootDir: string;

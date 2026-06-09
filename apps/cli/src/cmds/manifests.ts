@@ -9,7 +9,7 @@ import {
   buildManifestPlanTree,
   type ExecutionPlanDto,
   type ManifestContextDto,
-} from "@zenobius/boxfiles-core";
+} from "@boxfiles/core";
 
 type Manifest = ManifestContextDto;
 

@@ -1,11 +1,11 @@
 import Type from "typebox";
 import * as path from "node:path";
 import Schema from "typebox/schema";
-import { NonBlankStringSchema } from "@zenobius/boxfiles-core";
+import { NonBlankStringSchema } from "@boxfiles/core";
 import {
     type ActionProvider,
     createPlugin,
-} from "@zenobius/boxfiles-core";
+} from "@boxfiles/core";
 
 const CopyConfigSchema = Type.Object({
     from: Type.Readonly(NonBlankStringSchema),

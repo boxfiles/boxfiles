@@ -3,7 +3,7 @@ import {
   ManifestService,
   PluginService,
   RuntimeNotActiveError,
-} from "@zenobius/boxfiles-core";
+} from "@boxfiles/core";
 import { builtInPlugins } from "./providers";
 
 const RUNTIME_STATE_KEY = "boxfiles.runtime";

@@ -1,10 +1,10 @@
 import Type from "typebox";
 import Schema from "typebox/schema";
-import { NonBlankStringSchema } from "@zenobius/boxfiles-core";
+import { NonBlankStringSchema } from "@boxfiles/core";
 import {
     type ActionProvider,
     createPlugin,
-} from "@zenobius/boxfiles-core";
+} from "@boxfiles/core";
 
 const RunConfigSchema = Type.Object({
     command: Type.Readonly(NonBlankStringSchema),

@@ -23,7 +23,7 @@ Create `src/providers/package.ts`:
 ```ts
 import Type from "typebox";
 import Schema from "typebox/schema";
-import { createPlugin, type ActionProvider } from "@zenobius/boxfiles";
+import { createPlugin, type ActionProvider } from "@boxfiles/cli";
 
 const PackageConfigSchema = Type.Object({
     name: Type.Readonly(Type.String({ minLength: 1 })),
@@ -112,7 +112,7 @@ Plugins can also expose facts without actions:
 Create `src/providers/os.ts`:
 
 ```ts
-import { createPlugin } from "@zenobius/boxfiles";
+import { createPlugin } from "@boxfiles/cli";
 
 export default createPlugin({
     id: "os",
