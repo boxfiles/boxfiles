@@ -1,4 +1,4 @@
 - [x] split quickstart into user and plugin author pages
-- [ ] copy github workflows from my bun module template, add in building binaries as release artifacts.
+- [x] copy github workflows from my bun module template, add in building binaries as release artifacts.
 - [ ] design a streaming tui output for `boxfiles apply ...`
 - [ ] implement the stubbed context providers
