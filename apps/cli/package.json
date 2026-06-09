@@ -2,6 +2,12 @@
   "name": "@boxfiles/cli",
   "version": "0.0.1",
   "type": "module",
+  "bin": {
+    "boxfiles": "./dist/pkg/index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "@boxfiles/core": "0.0.1",
     "@boxfiles/provider-copy": "0.0.1",
@@ -26,7 +32,7 @@
     "typescript": "^5"
   },
   "files": [
-    "src"
+    "dist/pkg"
   ],
   "publishConfig": {
     "access": "public"

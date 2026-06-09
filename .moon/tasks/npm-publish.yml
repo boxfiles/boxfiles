@@ -9,9 +9,48 @@ tasks:
     deps:
       - "^:npm-publish"
       - "~:build"
-    command: "npm publish --access public"
+    script: |
+      set -euo pipefail
+
+      publish_tag="${PUBLISH_TAG:-}"
+      if [ -z "${publish_tag}" ]; then
+        echo "ERROR: PUBLISH_TAG is required (expected: latest or next)." >&2
+        exit 1
+      fi
+
+      case "${publish_tag}" in
+        latest|next)
+          ;;
+        *)
+          echo "ERROR: unsupported PUBLISH_TAG='${publish_tag}' (expected: latest or next)." >&2
+          exit 1
+          ;;
+      esac
+
+      if [ "${publish_tag}" = "next" ]; then
+        last_tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+        if [ -n "${last_tag}" ]; then
+          build_number="$(git rev-list "${last_tag}..HEAD" --count)"
+        else
+          build_number="$(git rev-list HEAD --count)"
+        fi
+
+        current_version="$(jq -r '.version' package.json)"
+        base_version="${current_version%%-*}"
+        prerelease_version="${base_version}-next.${build_number}"
+
+        echo "Preparing next prerelease: ${current_version} -> ${prerelease_version}"
+        npm version "${prerelease_version}" --no-git-tag-version --allow-same-version
+      fi
+
+      args=(--access public --tag "${publish_tag}")
+      # if [ -n "${GITHUB_ACTIONS:-}" ]; then
+      # args+=(--provenance)
+      # fi
+
+      npm publish "${args[@]}"
     tags:
       - npm-publish
     options:
       cache: false
-      runInCI: false
+      runInCI: true

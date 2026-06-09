@@ -20,5 +20,10 @@ tasks:
   build:
     command: "bunx tsc --noEmit"
 
+  publish:
+    deps:
+      - "~:npm-publish"
+    command: noop
+
   test:
     command: "bun test"

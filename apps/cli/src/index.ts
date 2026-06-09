@@ -1,3 +1,4 @@
+#!/usr/bin/env bun
 import { didYouMeanPlugin, helpPlugin, versionPlugin } from "@crustjs/plugins";
 import { app } from "./app";
 import { manifestCmd } from "./cmds/manifests";

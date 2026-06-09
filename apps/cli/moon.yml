@@ -1,24 +1,6 @@
 ---
-dependsOn:
-  - core
-  - provider-copy
-  - provider-gpu
-  - provider-link
-  - provider-network
-  - provider-os
-  - provider-ownership
-  - provider-packages
-  - provider-permissions
-  - provider-remove
-  - provider-rename
-  - provider-run
-  - provider-storage
-  - provider-user
 language: typescript
 layer: application
-
-tags:
-  - npm-publish
 
 toolchains:
   default: ["javascript", "bun"]
@@ -34,15 +16,13 @@ tasks:
     command: "bunx tsc --noEmit"
 
   build:
-    deps:
-      - "^:build"
     script: |
       set -euo pipefail
       mkdir -p ./dist
       bun build ./src/index.ts --compile --target=bun-linux-x64 \
         --outfile=./dist/boxfiles-linux-x64
       bun build ./src/index.ts --compile --target=bun-linux-arm64 \
-        # --outfile=./dist/boxfiles-linux-arm64
+        --outfile=./dist/boxfiles-linux-arm64
       bun build ./src/index.ts --compile --target=bun-darwin-x64 \
         --outfile=./dist/boxfiles-darwin-x64
       bun build ./src/index.ts --compile --target=bun-darwin-arm64 \
@@ -59,7 +39,44 @@ tasks:
   publish:
     deps:
       - "~:build"
-    command: noop
+    script: |
+      set -euo pipefail
+
+      publish_tag="${PUBLISH_TAG:-}"
+      if [ "${publish_tag}" != "latest" ]; then
+        echo "Skipping GitHub release asset upload for PUBLISH_TAG='${publish_tag:-unset}'."
+        exit 0
+      fi
+
+      version="$(jq -r '.version' package.json)"
+      release_tag=""
+      candidate_tags=(
+        "apps/cli-v${version}"
+        "cli-v${version}"
+        "@boxfiles/cli-v${version}"
+        "v${version}"
+      )
+
+      for candidate_tag in "${candidate_tags[@]}"; do
+        if gh release view "${candidate_tag}" >/dev/null 2>&1; then
+          release_tag="${candidate_tag}"
+          break
+        fi
+      done
+
+      if [ -z "${release_tag}" ]; then
+        echo "ERROR: unable to find GitHub release for @boxfiles/cli version ${version}." >&2
+        echo "Tried: ${candidate_tags[*]}" >&2
+        exit 1
+      fi
+
+      gh release upload "${release_tag}" \
+        ./dist/boxfiles-linux-x64 \
+        ./dist/boxfiles-linux-arm64 \
+        ./dist/boxfiles-darwin-x64 \
+        ./dist/boxfiles-darwin-arm64 \
+        ./dist/boxfiles-windows-x64.exe \
+        --clobber
     outputs:
       - "./dist/boxfiles-linux-x64"
       - "./dist/boxfiles-linux-arm64"
