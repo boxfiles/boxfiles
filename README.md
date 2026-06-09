@@ -27,6 +27,7 @@ BOXFILES_DIR=./modulename/childmodulename boxfiles apply granchildmodulename
 ## show manifests
 boxfiles manifests
 boxfiles manifests files # show uncompiled, unplanned manifest list from current directory
+boxfiles manifests validate # show all manifest validation errors from current directory
 boxfiles manifests plan # show planned manifest list from current directory
 
 ## show context
@@ -39,6 +40,8 @@ boxfiles plugins # show all plugins
 ## Manifest file assets
 
 A manifest may have a sibling `files/` directory for source assets. Copy actions resolve `from` relative to that directory, so manifest authors do not write `./files` in manifests.
+
+Hidden `.boxfilesrc.{json,yaml,yml,toml}` files are config files, not manifests. Boxfiles ignores them during manifest discovery.
 
 ```text
 modules/git.yaml

@@ -57,16 +57,16 @@ Context can come from four places:
 - Project: facts about the project, such as pwd, upstreamrepo, etc.
 - Plugin: facts supplied by plugin context providers.
 
-A user can also generate facts by placing files in `~/.config/boxfiles` and `.boxfilesrc{yaml|toml}`. These files will be parsed and their contents will be added to the context as facts. The user can use these facts in their modules.
+A user can also generate facts by placing files in `~/.config/boxfiles` and hidden `.boxfilesrc.{json,yaml,yml,toml}` files. These files will be parsed and their contents will be added to the context as facts. The user can use these facts in their modules.
 
-Various template language dls constructs will be available to the user within the `.boxfilesrc` in order to generate useful and interesting facts. For example, a user could generate a fact that contains the output of a command, or the contents of a file, or the result of some computation.
+Various template language dls constructs will be available to the user within `.boxfilesrc.{json,yaml,yml,toml}` files in order to generate useful and interesting facts. For example, a user could generate a fact that contains the output of a command, or the contents of a file, or the result of some computation.
 
 
 ## Process
 
 ```text
 CLI load
-  -> read boxfilesrc files in local and xdg config dir
+  -> read `.boxfilesrc.{json,yaml,yml,toml}` files in local and xdg config dir
   -> parse plugin modules
   -> validate plugin shape
   -> gather manifests

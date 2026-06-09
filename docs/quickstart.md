@@ -27,7 +27,7 @@ mkdir -p modules/files plugins
 Boxfiles discovers `.yaml`, `.yml`, and `.toml` manifests below the selected root. Put manifests in manifest directories. Copy sources come from a `files/` directory next to the current manifest, so manifest authors reference `gitconfig`, not `./files/gitconfig`.
 
 
-Root `boxfiles.yaml`, `boxfiles.yml`, and `boxfiles.toml` are reserved names. Boxfiles ignores them during manifest discovery. Use `boxfile.yaml`, `boxfile.yml`, or `boxfile.toml` for a root manifest, or put manifests under directories like `modules/`.
+Hidden `.boxfilesrc.{json,yaml,yml,toml}` files are config files, not manifests. Boxfiles ignores them anywhere in the tree.
 
 Create `modules/git.yaml`:
 
