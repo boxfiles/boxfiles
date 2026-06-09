@@ -113,11 +113,7 @@ export type ManifestCompileContext = {
 };
 
 const MANIFEST_EXTENSIONS = new Set([".yaml", ".yml", ".toml"]);
-const RESERVED_ROOT_MANIFESTS = new Set([
-  "boxfiles.yaml",
-  "boxfiles.yml",
-  "boxfiles.toml",
-]);
+const BOXFILES_CONFIG_PATTERN = /^\.boxfilesrc\.(json|ya?ml|toml)$/;
 const IGNORED_DISCOVERY_DIRECTORIES = new Set([
   "node_modules",
   "dist",
@@ -158,7 +154,7 @@ export class ManifestService {
 
   /**
    * Find all manifests recursively under rootDir.
-   * Excludes fixture/build directories, any path under a `files` directory, and reserved root `boxfiles.*` files.
+   * Excludes fixture/build directories, any path under a `files` directory, and `.boxfilesrc.*` config files anywhere.
    */
   async discover(): Promise<readonly string[]> {
     const discovered = await discoverManifestPaths(
@@ -442,13 +438,10 @@ async function isManifestPath(
   const relativePath = path.relative(rootDir, manifestPath);
   if (await isFileAssetPath(manifestPath, fileSystem)) return false;
 
-  // at this point, if it's not at the root, it's a manifest.
-  const isRoot = path.dirname(relativePath) === ".";
-  if (!isRoot) return true;
+  // config files are not manifests, anywhere in the tree.
+  if (BOXFILES_CONFIG_PATTERN.test(path.basename(relativePath))) return false;
 
-  // If it is at the root, it must not be a reserved filename to be a manifest.
-  // if it's a special filename at the root, it's not a manifest
-  return !RESERVED_ROOT_MANIFESTS.has(path.basename(relativePath));
+  return true;
 }
 
 function isIgnoredDiscoveryDirectory(entryName: string): boolean {

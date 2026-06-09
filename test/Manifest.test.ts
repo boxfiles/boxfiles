@@ -79,18 +79,19 @@ describe("ManifestService.discover", () => {
   });
 
 
-  test("ignores reserved root boxfiles filenames", async () => {
+  test("ignores hidden boxfilesrc config files anywhere", async () => {
     const harness = createManifestTestHarness();
     await harness.writeManifest("boxfiles.yaml", "steps: []\n");
-    await harness.writeManifest("boxfiles.yml", "steps: []\n");
-    await harness.writeManifest("boxfiles.toml", "steps = []\n");
     await harness.writeManifest("boxfile.yaml", "steps: []\n");
+    await harness.writeManifest(".boxfilesrc.yaml", "plugins: []\n");
+    await harness.writeManifest("modules/.boxfilesrc.toml", "plugins = []\n");
     await harness.writeManifest("modules/boxfiles.yaml", "steps: []\n");
 
     const manifestPaths = await harness.service.discover();
 
     expect(manifestPaths.map((manifestPath) => path.posix.relative(harness.rootDir, manifestPath))).toEqual([
       "boxfile.yaml",
+      "boxfiles.yaml",
       "modules/boxfiles.yaml",
     ]);
   });
