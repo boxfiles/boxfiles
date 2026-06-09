@@ -5,15 +5,206 @@
     "": {
       "name": "boxfiles",
       "dependencies": {
+        "@moonrepo/cli": "*",
+      },
+    },
+    "apps/cli": {
+      "name": "@zenobius/boxfiles",
+      "version": "0.0.1",
+      "dependencies": {
         "@crustjs/core": "^0.0.19",
         "@crustjs/plugins": "^0.1.2",
+        "@zenobius/boxfiles-core": "workspace:*",
+        "@zenobius/boxfiles-provider-copy": "workspace:*",
+        "@zenobius/boxfiles-provider-gpu": "workspace:*",
+        "@zenobius/boxfiles-provider-link": "workspace:*",
+        "@zenobius/boxfiles-provider-network": "workspace:*",
+        "@zenobius/boxfiles-provider-os": "workspace:*",
+        "@zenobius/boxfiles-provider-ownership": "workspace:*",
+        "@zenobius/boxfiles-provider-packages": "workspace:*",
+        "@zenobius/boxfiles-provider-permissions": "workspace:*",
+        "@zenobius/boxfiles-provider-remove": "workspace:*",
+        "@zenobius/boxfiles-provider-rename": "workspace:*",
+        "@zenobius/boxfiles-provider-run": "workspace:*",
+        "@zenobius/boxfiles-provider-storage": "workspace:*",
+        "@zenobius/boxfiles-provider-user": "workspace:*",
         "typebox": "^1.2.2",
       },
       "devDependencies": {
         "@types/bun": "latest",
-        "memfs": "^4.57.6",
+        "typescript": "^5",
       },
-      "peerDependencies": {
+    },
+    "apps/docs": {
+      "name": "@zenobius/boxfiles-docs",
+      "version": "0.0.1",
+    },
+    "pkgs/core": {
+      "name": "@zenobius/boxfiles-core",
+      "version": "0.0.1",
+      "dependencies": {
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@zenobius/boxfiles-provider-copy": "workspace:*",
+        "memfs": "^4.57.6",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-copy": {
+      "name": "@zenobius/boxfiles-provider-copy",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-gpu": {
+      "name": "@zenobius/boxfiles-provider-gpu",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-link": {
+      "name": "@zenobius/boxfiles-provider-link",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-network": {
+      "name": "@zenobius/boxfiles-provider-network",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-os": {
+      "name": "@zenobius/boxfiles-provider-os",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-ownership": {
+      "name": "@zenobius/boxfiles-provider-ownership",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-packages": {
+      "name": "@zenobius/boxfiles-provider-packages",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-permissions": {
+      "name": "@zenobius/boxfiles-provider-permissions",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-remove": {
+      "name": "@zenobius/boxfiles-provider-remove",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-rename": {
+      "name": "@zenobius/boxfiles-provider-rename",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-run": {
+      "name": "@zenobius/boxfiles-provider-run",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-storage": {
+      "name": "@zenobius/boxfiles-provider-storage",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
+    "pkgs/provider-user": {
+      "name": "@zenobius/boxfiles-provider-user",
+      "version": "0.0.1",
+      "dependencies": {
+        "@zenobius/boxfiles-core": "workspace:*",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
         "typescript": "^5",
       },
     },
@@ -55,11 +246,61 @@
 
     "@jsonjoy.com/util": ["@jsonjoy.com/util@1.9.0", "", { "dependencies": { "@jsonjoy.com/buffers": "^1.0.0", "@jsonjoy.com/codegen": "^1.0.0" }, "peerDependencies": { "tslib": "2" } }, "sha512-pLuQo+VPRnN8hfPqUTLTHk126wuYdXVxE6aDmjSeV4NCAgyxWbiOIeNJVtID3h1Vzpoi9m4jXezf73I6LgabgQ=="],
 
+    "@moonrepo/cli": ["@moonrepo/cli@2.3.2", "", { "dependencies": { "detect-libc": "^2.1.2" }, "optionalDependencies": { "@moonrepo/core-linux-arm64-gnu": "2.3.2", "@moonrepo/core-linux-arm64-musl": "2.3.2", "@moonrepo/core-linux-x64-gnu": "2.3.2", "@moonrepo/core-linux-x64-musl": "2.3.2", "@moonrepo/core-macos-arm64": "2.3.2", "@moonrepo/core-macos-x64": "2.3.2", "@moonrepo/core-windows-x64-msvc": "2.3.2" }, "bin": { "moon": "moon.js", "moonx": "moonx.js" } }, "sha512-KSRupv+RlFfXHL2LEYMlNt2AQ1zA6bp6lsnEhjhF6SdCYeOBFKhuJR4mMYBwH5IJi4WPkNRe2IYBXrdHP8T64A=="],
+
+    "@moonrepo/core-linux-arm64-gnu": ["@moonrepo/core-linux-arm64-gnu@2.3.2", "", { "os": "linux", "cpu": "arm64" }, "sha512-TwreP+/ttYAy3j7mtRhGGMaHOOxyL5+HDzL2wUUN1xtvgQcE63QxeR77fgNItzII8tf9Nwxbqy/wWq/Gm3KSsQ=="],
+
+    "@moonrepo/core-linux-arm64-musl": ["@moonrepo/core-linux-arm64-musl@2.3.2", "", { "os": "linux", "cpu": "arm64" }, "sha512-0Tl8e4aR0RWkqinnFll6vchuh829bvcMIojsWLc16zCMeZ7sDT86qPeAObWjtIEfs8agv8QRt4CunyCNOjiM+w=="],
+
+    "@moonrepo/core-linux-x64-gnu": ["@moonrepo/core-linux-x64-gnu@2.3.2", "", { "os": "linux", "cpu": "x64" }, "sha512-K+ccl2xPzYtx/rZOnjkM1RfqXO382Dt8C0Ro/uxE9d5HkFK72O58O+SqnEd2QDfseK6TYkauyG+hqVZm6JB03A=="],
+
+    "@moonrepo/core-linux-x64-musl": ["@moonrepo/core-linux-x64-musl@2.3.2", "", { "os": "linux", "cpu": "x64" }, "sha512-NvIimqjGAa3u6KMLc4RlOsgWe4r508S4jXLhpgRhOUgxgFTBmh5oXKX/w4Veyp6lGioRN1+9LhxMMWg7Fv5ULw=="],
+
+    "@moonrepo/core-macos-arm64": ["@moonrepo/core-macos-arm64@2.3.2", "", { "os": "darwin", "cpu": "arm64" }, "sha512-d79yc4Ng+NOKDRMCBsSWgQ/Qnw8Dp/w95kA/Hltz80QeCBjHmjWZBkMDY7vj+P7LWi9yOILKbp/0H5q/xYx4Tw=="],
+
+    "@moonrepo/core-macos-x64": ["@moonrepo/core-macos-x64@2.3.2", "", { "os": "darwin", "cpu": "x64" }, "sha512-edWeYzdeF6t7F/g67iZfpx/XWn3KdpY40OciCNiQpF5VSF2nsvoaJYZx3UU5BJYY7pCzcftAtmOQweXDNHJTkg=="],
+
+    "@moonrepo/core-windows-x64-msvc": ["@moonrepo/core-windows-x64-msvc@2.3.2", "", { "os": "win32", "cpu": "x64" }, "sha512-T8u5nBgLD4oYL6NDpaoNmxXoXSawD1us1NQnmbYNbND4iSanm3sXf/vUXNz50DTONB5AARGG0HKs9sYuOSSNAQ=="],
+
     "@types/bun": ["@types/bun@1.3.14", "", { "dependencies": { "bun-types": "1.3.14" } }, "sha512-h1hFqFVcvAvD9j9K7ZW7vd82aSA+rTdznZa+5bwvCwqSB1jmmfLcbIWhOLx1/+boy/xmjgCs/OMUL8hRJSmnPw=="],
 
     "@types/node": ["@types/node@25.9.2", "", { "dependencies": { "undici-types": ">=7.24.0 <7.24.7" } }, "sha512-G05zqtJhcDLb8uslf5EjCxXg9G1KQxiV8OS0R26IC//Eoyitzqe8z37I7cqvnZlrlSfgocQRfSn/AHBZJJFyGw=="],
 
+    "@zenobius/boxfiles": ["@zenobius/boxfiles@workspace:apps/cli"],
+
+    "@zenobius/boxfiles-core": ["@zenobius/boxfiles-core@workspace:pkgs/core"],
+
+    "@zenobius/boxfiles-docs": ["@zenobius/boxfiles-docs@workspace:apps/docs"],
+
+    "@zenobius/boxfiles-provider-copy": ["@zenobius/boxfiles-provider-copy@workspace:pkgs/provider-copy"],
+
+    "@zenobius/boxfiles-provider-gpu": ["@zenobius/boxfiles-provider-gpu@workspace:pkgs/provider-gpu"],
+
+    "@zenobius/boxfiles-provider-link": ["@zenobius/boxfiles-provider-link@workspace:pkgs/provider-link"],
+
+    "@zenobius/boxfiles-provider-network": ["@zenobius/boxfiles-provider-network@workspace:pkgs/provider-network"],
+
+    "@zenobius/boxfiles-provider-os": ["@zenobius/boxfiles-provider-os@workspace:pkgs/provider-os"],
+
+    "@zenobius/boxfiles-provider-ownership": ["@zenobius/boxfiles-provider-ownership@workspace:pkgs/provider-ownership"],
+
+    "@zenobius/boxfiles-provider-packages": ["@zenobius/boxfiles-provider-packages@workspace:pkgs/provider-packages"],
+
+    "@zenobius/boxfiles-provider-permissions": ["@zenobius/boxfiles-provider-permissions@workspace:pkgs/provider-permissions"],
+
+    "@zenobius/boxfiles-provider-remove": ["@zenobius/boxfiles-provider-remove@workspace:pkgs/provider-remove"],
+
+    "@zenobius/boxfiles-provider-rename": ["@zenobius/boxfiles-provider-rename@workspace:pkgs/provider-rename"],
+
+    "@zenobius/boxfiles-provider-run": ["@zenobius/boxfiles-provider-run@workspace:pkgs/provider-run"],
+
+    "@zenobius/boxfiles-provider-storage": ["@zenobius/boxfiles-provider-storage@workspace:pkgs/provider-storage"],
+
+    "@zenobius/boxfiles-provider-user": ["@zenobius/boxfiles-provider-user@workspace:pkgs/provider-user"],
+
     "bun-types": ["bun-types@1.3.14", "", { "dependencies": { "@types/node": "*" } }, "sha512-4N0ig0fEomHt5R0KCFWjovxow98rIoRwKolrYdCcknNwMekCXRnWEUvgu5soYV8QXtVsrUD8B95MBOZGPvr6KQ=="],
+
+    "detect-libc": ["detect-libc@2.1.2", "", {}, "sha512-Btj2BOOO83o3WyH59e8MgXsxEQVcarkUOpEYrubB0urwnN10yQ364rsiByU11nZlqWYZm05i/of7io4mzihBtQ=="],
 
     "glob-to-regex.js": ["glob-to-regex.js@1.2.0", "", { "peerDependencies": { "tslib": "2" } }, "sha512-QMwlOQKU/IzqMUOAZWubUOT8Qft+Y0KQWnX9nK3ch0CJg0tTp4TvGZsTfudYKv2NzoQSyPcnA6TYeIQ3jGichQ=="],
 

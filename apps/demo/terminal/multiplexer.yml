@@ -1,0 +1,9 @@
+---
+name: terminal-multiplexer
+dependsOn:
+  - terminal.shell
+steps:
+  - uses: symlink
+    with:
+      from: zellij/config.kdl
+      to: ~/.config/zellij/config.kdl

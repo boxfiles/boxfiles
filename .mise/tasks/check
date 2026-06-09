@@ -1,5 +1,0 @@
-#!/usr/bin/env bash
-set -euo pipefail
-
-bunx tsc --noEmit
-bun run index.ts --help >/dev/null

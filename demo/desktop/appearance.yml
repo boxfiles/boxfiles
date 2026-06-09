@@ -1,8 +1,0 @@
-name: desktop-appearance
-dependsOn:
-  - base.foundation
-steps:
-  - uses: copy
-    with:
-      from: gtk/settings.ini
-      to: ~/.config/gtk-3.0/settings.ini

@@ -1,0 +1,21 @@
+---
+$schema: "file://../../.moon/cache/schemas/project.json"
+
+language: typescript
+layer: library
+
+toolchains:
+  default: ["javascript", "bun"]
+
+tasks:
+  lint:
+    command: "bunx tsc --noEmit"
+
+  typecheck:
+    command: "bunx tsc --noEmit"
+
+  build:
+    command: "bunx tsc --noEmit"
+
+  test:
+    command: "bun test"

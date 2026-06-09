@@ -1,3 +1,4 @@
+---
 name: Publish Release Assets
 
 on:
@@ -6,6 +7,11 @@ on:
       - published
   workflow_dispatch:
     inputs:
+      target:
+        description: moon project id to publish
+        required: true
+        default: cli
+        type: string
       tag:
         description: Release tag to build and upload
         required: true
@@ -17,42 +23,86 @@ permissions:
 jobs:
   publish:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Resolve tag
-        id: tag
+      - name: Resolve target and tag
+        id: meta
+        shell: bash
         run: |
+          set -euo pipefail
+
           if [ -n "${{ github.event.release.tag_name }}" ]; then
             echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
           else
             echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
           fi
 
+          if [ -n "${{ inputs.target }}" ]; then
+            echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "target=cli" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ steps.tag.outputs.tag }}
+          ref: ${{ steps.meta.outputs.tag }}
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Setup Tooling
-        uses: jdx/mise-action@v2
+      - name: Setup Toolchain
+        uses: moonrepo/setup-toolchain@v0
         with:
-          install: true
-          cache: true
-          experimental: true
+          auto-install: true
+          auto-setup: true
 
-      - name: Build binaries
-        run: mise run build
+      - name: Validate target
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          projects_json="$(moon query projects)"
+          if ! jq -e --arg target "${{ steps.meta.outputs.target }}" '.projects[] | select(.id == $target)' >/dev/null <<<"${projects_json}"; then
+            valid_targets="$(jq -r '.projects[].id' <<<"${projects_json}" | sort | paste -sd ', ' -)"
+            echo "ERROR: Unknown PUBLISH_TARGET '${{ steps.meta.outputs.target }}'." >&2
+            echo "Valid targets: ${valid_targets}" >&2
+            exit 1
+          fi
+
+      - name: Build publish target
+        run: moon run ${{ steps.meta.outputs.target }}:publish
+
+      - name: Resolve release files
+        id: files
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          projects_json="$(moon query projects)"
+          project_root="$(jq -r --arg target "${{ steps.meta.outputs.target }}" '.projects[] | select(.id == $target) | .root' <<<"${projects_json}")"
+          if [ -z "${project_root}" ] || [ "${project_root}" = "null" ]; then
+            echo "ERROR: unable to resolve project root for '${{ steps.meta.outputs.target }}'." >&2
+            exit 1
+          fi
+
+          tasks_json="$(moon query tasks --project ${{ steps.meta.outputs.target }})"
+          files="$(jq -r --arg target "${{ steps.meta.outputs.target }}" --arg root "${project_root}" '.tasks[$target].publish.outputs[]?.file | select(length > 0) | "\($root)/\(.)"' <<<"${tasks_json}")"
+          if [ -z "${files}" ]; then
+            echo "ERROR: publish task for '${{ steps.meta.outputs.target }}' does not declare outputs." >&2
+            exit 1
+          fi
+
+          {
+            echo 'files<<EOF'
+            printf '%s\n' "${files}"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
 
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.tag.outputs.tag }}
+          tag_name: ${{ steps.meta.outputs.tag }}
           files: |
-            dist/boxfiles-linux-x64
-            dist/boxfiles-linux-arm64
-            dist/boxfiles-darwin-x64
-            dist/boxfiles-darwin-arm64
-            dist/boxfiles-windows-x64.exe
+            ${{ steps.files.outputs.files }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,23 +1,12 @@
 {
   "name": "boxfiles",
   "version": "0.0.1",
-  "module": "index.ts",
-  "type": "module",
-  "scripts": {
-    "start": "bun run index.ts",
-    "typecheck": "bunx tsc --noEmit",
-    "build": ".mise/tasks/build"
-  },
-  "devDependencies": {
-    "@types/bun": "latest",
-    "memfs": "^4.57.6"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
+  "private": true,
   "dependencies": {
-    "@crustjs/core": "^0.0.19",
-    "@crustjs/plugins": "^0.1.2",
-    "typebox": "^1.2.2"
-  }
+    "@moonrepo/cli": "*"
+  },
+  "workspaces": [
+    "apps/*",
+    "pkgs/*"
+  ]
 }

@@ -1,0 +1,19 @@
+{
+  /**
+   * This file exists to configure nvim (via codesettings plugin) and vscode.
+   */
+  // Moon schema cache:
+  // project.json, workspace.json, toolchains.json, tasks.json,
+  // template.json, template-frontmatter.json, extensions.json
+  "yaml.schemaStore.enable": false,
+  "yaml.schemas": {
+    "./.moon/cache/schemas/project.json": [
+      "moon.yml",
+      ".agents/moon.yml",
+      "apps/*/moon.yml",
+      "pkgs/*/moon.yml"
+    ],
+    "./.moon/cache/schemas/workspace.json": [".moon/workspace.yml"],
+    "./.moon/cache/schemas/toolchains.json": [".moon/toolchains.yml"]
+  }
+}

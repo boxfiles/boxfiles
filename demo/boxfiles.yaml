@@ -1,3 +1,0 @@
----
-# Reserved root filename. Manifest discovery should ignore this file.
-plugins: []

@@ -1,0 +1,12 @@
+---
+projects:
+  sources:
+    repo: "./"
+    agents: ".agents/"
+  globs:
+    - "apps/*"
+    - "pkgs/*"
+
+vcs:
+  defaultBranch: "main"
+  provider: "github"

@@ -7,21 +7,21 @@ Boxfiles is a Bun + TypeScript CLI/GUI for workstation provisioning: low-ceremon
 ## Runtime and tooling
 
 - Use **Bun** for package management and execution.
-- Install deps with `bun install` or `mise run install`.
-- Run the app with `bun run index.ts`, `bun run start`, or `mise run start`.
-- Typecheck with `bun run typecheck` or `mise run typecheck`.
-- Build release binaries with `bun run build`, `mise run build`, or `.mise/tasks/build`.
+- Install deps with `bun install`.
+- Run the app with `moon run cli:start` or `bun run apps/cli/src/index.ts`.
+- Typecheck with `moon run repo:typecheck`.
+- Build release binaries with `moon run repo:build` or `moon run cli:publish`.
 - Build outputs go to `dist/`: linux x64/arm64, macOS darwin x64/arm64, windows x64 exe.
-- Project-local mise config lives at `.mise/config.toml`; file tasks live in `.mise/tasks/*`.
-- If mise refuses to run tasks, trust the local config with `mise trust .mise/config.toml`.
-- Beware global mise config leakage on this machine: if `mise run` attempts unrelated global tool installs, validate task bodies directly with `.mise/tasks/<name>` and report the leakage.
+- Moon config lives at `.moon/`; project tasks live in `moon.yml` files.
+- Use `moonrepo/setup-toolchain` in CI for toolchain setup.
+- Keep workflow commands in repo `moon.yml` files; do not hide task logic in shell wrappers unless needed.
 - Use TypeScript ES modules. Keep imports explicit and extensionless unless repo policy changes.
 
 
 ## Plugin architecture
 
 - Plugins are capability modules, not action-only providers.
-- Built-in providers MUST live at `src/providers/{capability}.ts`.
+- Built-in providers MUST live at `pkgs/provider-{capability}/src/index.ts`.
 - Built-in provider file basename SHOULD match plugin `id`.
 - Simple built-in action provider kind SHOULD match capability name.
 - `ActionProvider` MUST be generic over its TypeBox config schema so `validate()`, `plan()`, and `apply()` share one config type source.

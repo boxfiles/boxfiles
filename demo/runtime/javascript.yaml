@@ -1,7 +1,0 @@
-name: javascript-runtime
-dependsOn:
-  - base.foundation
-steps:
-  - uses: run
-    with:
-      command: echo "would verify JavaScript runtime"

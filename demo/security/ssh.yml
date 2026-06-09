@@ -1,8 +1,0 @@
-name: ssh-access
-dependsOn:
-  - base.foundation
-steps:
-  - uses: copy
-    with:
-      from: ssh/config
-      to: ~/.ssh/config
