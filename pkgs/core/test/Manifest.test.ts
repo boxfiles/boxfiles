@@ -76,6 +76,29 @@ describe("ManifestService.discover", () => {
     ]);
   });
 
+  test("discovers manifest contexts in discovery order", async () => {
+    const harness = createManifestTestHarness();
+    await harness.writeManifest("demo/workstation.yaml", "steps: []\n");
+
+    const contexts = await harness.service.discoverContexts();
+
+    expect(
+      contexts.map((manifest) => ({
+        id: String(manifest.id),
+        path: manifest.path,
+        dir: manifest.dir,
+        filesDir: manifest.filesDir,
+      })),
+    ).toEqual([
+      {
+        id: "demo.workstation",
+        path: "demo/workstation.yaml",
+        dir: "demo",
+        filesDir: "demo/files",
+      },
+    ]);
+  });
+
 
   test("ignores hidden boxfilesrc config files anywhere", async () => {
     const harness = createManifestTestHarness();

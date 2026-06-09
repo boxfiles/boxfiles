@@ -167,6 +167,14 @@ export class ManifestService {
     );
   }
 
+  async discoverContexts(): Promise<readonly ManifestContextDto[]> {
+    const manifestPaths = await this.discover();
+    return manifestPaths.map((manifestPath) => {
+      const manifestId = manifestIdFromPath(this.rootDir, manifestPath);
+      return manifestContextFromPath(this.rootDir, manifestPath, manifestId);
+    });
+  }
+
   /**
    * Parse manifests and validate each step config against the matching plugin/provider.
    * Template interpolation is intentionally not implemented yet; this compiles structural DTOs only.
@@ -190,34 +198,15 @@ export class ManifestService {
     context: ManifestCompileContext = { facts: {} },
   ): Promise<ExecutionPlanDto> {
     const manifests = await this.compile(context);
-    const orderedManifests = sortManifestsByDependencies(manifests);
-    const actions: ActionPlanDto[] = [];
+    const { PlanService } = await import("./Plan");
+    const planService = new PlanService(
+      this.rootDir,
+      this.pluginService,
+      manifests,
+      context,
+    );
 
-    for (const manifest of orderedManifests) {
-      for (const step of manifest.steps) {
-        const provider = this.pluginService.getActionProvider(step.uses);
-        if (provider === null) {
-          throw new NoProviderRegisteredError(manifest.id, step.uses);
-        }
-
-        actions.push(
-          await provider.plan({
-            action: step,
-            plan: null,
-            ctx: {
-              rootDir: this.rootDir,
-              facts: context.facts,
-              manifest: manifest.manifest,
-            },
-          }),
-        );
-      }
-    }
-
-    return {
-      manifests: [...orderedManifests],
-      actions,
-    };
+    return planService.compile();
   }
 
   private compileManifest(manifest: Manifest): CompiledManifestDto {
@@ -476,132 +465,3 @@ function parseManifestContent(manifestPath: string, content: string): unknown {
   }
 }
 
-function sortManifestsByDependencies(
-  manifests: readonly CompiledManifestDto[],
-): readonly CompiledManifestDto[] {
-  const byId = new Map(
-    manifests.map((manifest) => [manifest.id, manifest] as const),
-  );
-  const normalizedManifests = manifests.map((manifest) => ({
-    ...manifest,
-    dependsOn: resolveManifestDependencies(manifest, byId),
-  }));
-  const normalizedById = new Map(
-    normalizedManifests.map((manifest) => [manifest.id, manifest] as const),
-  );
-  const temporary = new Set<ManifestId>();
-  const permanent = new Set<ManifestId>();
-  const sorted: CompiledManifestDto[] = [];
-
-  for (const manifest of normalizedManifests) {
-    visitManifest(manifest, normalizedById, temporary, permanent, sorted);
-  }
-
-  return sorted;
-}
-
-function resolveManifestDependencies(
-  manifest: CompiledManifestDto,
-  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
-): ManifestId[] {
-  return manifest.dependsOn.map((dependencyId) =>
-    resolveManifestDependency(manifest, dependencyId, byId),
-  );
-}
-
-function resolveManifestDependency(
-  manifest: CompiledManifestDto,
-  dependencyId: ManifestId,
-  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
-): ManifestId {
-  const matches = uniqueManifestIds([
-    exactDependencyCandidate(dependencyId, byId),
-    ...relativeDependencyCandidates(manifest, dependencyId, byId),
-  ]);
-
-  if (matches.length === 1) {
-    const match = matches[0];
-    if (match === undefined) {
-      throw new UnexpectedEmptyDependencyMatchError(manifest.id, dependencyId);
-    }
-    return match;
-  }
-
-  if (matches.length === 0) {
-    throw new ManifestDependencyMissingError(manifest.id, dependencyId);
-  }
-
-  throw new ManifestDependencyAmbiguousError(
-    manifest.id,
-    dependencyId,
-    matches,
-  );
-}
-
-function exactDependencyCandidate(
-  dependencyId: ManifestId,
-  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
-): ManifestId | null {
-  if (!byId.has(dependencyId)) return null;
-
-  return dependencyId;
-}
-
-function relativeDependencyCandidates(
-  manifest: CompiledManifestDto,
-  dependencyId: ManifestId,
-  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
-): readonly (ManifestId | null)[] {
-  const namespace = manifest.id.split(".").slice(0, -1);
-  const candidates: (ManifestId | null)[] = [];
-
-  for (let length = namespace.length; length >= 0; length -= 1) {
-    const candidate = toManifestId(
-      [...namespace.slice(0, length), dependencyId].join("."),
-    );
-    candidates.push(byId.has(candidate) ? candidate : null);
-  }
-
-  return candidates;
-}
-
-function uniqueManifestIds(
-  candidates: readonly (ManifestId | null)[],
-): ManifestId[] {
-  const unique = new Set<ManifestId>();
-
-  for (const candidate of candidates) {
-    if (candidate === null) continue;
-    unique.add(candidate);
-  }
-
-  return [...unique];
-}
-
-function visitManifest(
-  manifest: CompiledManifestDto,
-  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
-  temporary: Set<ManifestId>,
-  permanent: Set<ManifestId>,
-  sorted: CompiledManifestDto[],
-): void {
-  if (permanent.has(manifest.id)) return;
-  if (temporary.has(manifest.id)) {
-    throw new ManifestDependencyCycleError(manifest.id);
-  }
-
-  temporary.add(manifest.id);
-
-  for (const dependencyId of manifest.dependsOn) {
-    const dependency = byId.get(dependencyId);
-    if (!dependency) {
-      throw new ManifestDependencyMissingError(manifest.id, dependencyId);
-    }
-
-    visitManifest(dependency, byId, temporary, permanent, sorted);
-  }
-
-  temporary.delete(manifest.id);
-  permanent.add(manifest.id);
-  sorted.push(manifest);
-}

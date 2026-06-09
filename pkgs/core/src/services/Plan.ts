@@ -1,81 +1,305 @@
 /**
  * Plan service
  *
- * Takes a tree of manifests, the facts context and compiles a plan of actions to be taken.
+ * Takes compiled manifests, the facts context, and compiles an execution plan.
  */
 
 import Type from "typebox";
 import { NonBlankStringSchema } from "../common/schema";
 import {
-    ActionKindSchema,
-    CompiledManifestSchema,
-    ManifestIdSchema,
-    StepIdSchema,
-} from "./Manifest";
-import type { Manifest } from "./Manifest";
+  EmptyManifestIdError,
+  ManifestDependencyAmbiguousError,
+  ManifestDependencyCycleError,
+  ManifestDependencyMissingError,
+  NoProviderRegisteredError,
+  UnexpectedEmptyDependencyMatchError,
+} from "../exceptions/manifest";
 import type { ContextSnapshot } from "./Context";
-
+import {
+  ActionKindSchema,
+  CompiledManifestSchema,
+  ManifestIdSchema,
+  StepIdSchema,
+  type CompiledManifestDto,
+  type ManifestId,
+} from "./Manifest";
+import type { PluginService } from "./Plugins";
 
 export const ActionSafetySchema = Type.Object({
-    idempotent: Type.Readonly(Type.Boolean()),
-    unsafe: Type.Readonly(Type.Boolean()),
-    reason: Type.Readonly(Type.Optional(NonBlankStringSchema)),
+  idempotent: Type.Readonly(Type.Boolean()),
+  unsafe: Type.Readonly(Type.Boolean()),
+  reason: Type.Readonly(Type.Optional(NonBlankStringSchema)),
 });
 
 export type ActionSafetyDto = Type.Static<typeof ActionSafetySchema>;
 
 export const PlannedChangeOperationSchema = Type.Union([
-    Type.Literal("create"),
-    Type.Literal("update"),
-    Type.Literal("delete"),
-    Type.Literal("execute"),
-    Type.Literal("noop"),
+  Type.Literal("create"),
+  Type.Literal("update"),
+  Type.Literal("delete"),
+  Type.Literal("execute"),
+  Type.Literal("noop"),
 ]);
 
 export const PlannedChangeSchema = Type.Object({
-    target: Type.Readonly(NonBlankStringSchema),
-    operation: Type.Readonly(PlannedChangeOperationSchema),
-    before: Type.Readonly(Type.Optional(Type.Unknown())),
-    after: Type.Readonly(Type.Optional(Type.Unknown())),
-    message: Type.Readonly(Type.Optional(NonBlankStringSchema)),
+  target: Type.Readonly(NonBlankStringSchema),
+  operation: Type.Readonly(PlannedChangeOperationSchema),
+  before: Type.Readonly(Type.Optional(Type.Unknown())),
+  after: Type.Readonly(Type.Optional(Type.Unknown())),
+  message: Type.Readonly(Type.Optional(NonBlankStringSchema)),
 });
 
 export type PlannedChangeDto = Type.Static<typeof PlannedChangeSchema>;
 
 export const ActionPlanSchema = Type.Object({
-    actionId: Type.Readonly(StepIdSchema),
-    manifestId: Type.Readonly(ManifestIdSchema),
-    kind: Type.Readonly(ActionKindSchema),
-    summary: Type.Readonly(NonBlankStringSchema),
-    safety: Type.Readonly(ActionSafetySchema),
-    changes: Type.Readonly(Type.Array(PlannedChangeSchema)),
+  actionId: Type.Readonly(StepIdSchema),
+  manifestId: Type.Readonly(ManifestIdSchema),
+  kind: Type.Readonly(ActionKindSchema),
+  summary: Type.Readonly(NonBlankStringSchema),
+  safety: Type.Readonly(ActionSafetySchema),
+  changes: Type.Readonly(Type.Array(PlannedChangeSchema)),
 });
 
 export type ActionPlanDto = Type.Static<typeof ActionPlanSchema>;
 
 export const ExecutionPlanSchema = Type.Object({
-    manifests: Type.Readonly(Type.Array(CompiledManifestSchema)),
-    actions: Type.Readonly(Type.Array(ActionPlanSchema)),
+  manifests: Type.Readonly(Type.Array(CompiledManifestSchema)),
+  actions: Type.Readonly(Type.Array(ActionPlanSchema)),
 });
 
 export type ExecutionPlanDto = Type.Static<typeof ExecutionPlanSchema>;
 
+export type ManifestPlanNode = CompiledManifestDto & {
+  readonly children: ManifestPlanNode[];
+};
+
 export class PlanService {
-    plan: Plan | null = null;
+  public readonly manifests: readonly CompiledManifestDto[];
+  public readonly context: ContextSnapshot;
+  private readonly pluginService: PluginService;
+  private readonly rootDir: string;
 
-    constructor(
-        public manifests: readonly Manifest[],
-        public context: ContextSnapshot,
-    ) {}
+  constructor(
+    rootDir: string,
+    pluginService: PluginService,
+    manifests: readonly CompiledManifestDto[],
+    context: ContextSnapshot,
+  ) {
+    this.rootDir = rootDir;
+    this.pluginService = pluginService;
+    this.manifests = manifests;
+    this.context = context;
+  }
 
-    compile(): Plan {
-        // TODO: implement the logic to compile a plan from the manifests and context.
-        return new Plan();
+  async compile(): Promise<ExecutionPlanDto> {
+    const orderedManifests = sortManifestsByDependencies(this.manifests);
+    const actions: ActionPlanDto[] = [];
+
+    for (const manifest of orderedManifests) {
+      for (const step of manifest.steps) {
+        const provider = this.pluginService.getActionProvider(step.uses);
+        if (provider === null) {
+          throw new NoProviderRegisteredError(manifest.id, step.uses);
+        }
+
+        actions.push(
+          await provider.plan({
+            action: step,
+            plan: null,
+            ctx: {
+              rootDir: this.rootDir,
+              facts: this.context.facts,
+              manifest: manifest.manifest,
+            },
+          }),
+        );
+      }
     }
+
+    return {
+      manifests: [...orderedManifests],
+      actions,
+    };
+  }
+
+  summarizeManifests(): readonly ManifestPlanNode[] {
+    return buildManifestPlanTree(sortManifestsByDependencies(this.manifests));
+  }
 }
 
-class Plan {
-    steps: PlanStep[] = [];
+export function buildManifestPlanTree(
+  manifests: readonly CompiledManifestDto[],
+): readonly ManifestPlanNode[] {
+  const nodesById = new Map<ManifestId, ManifestPlanNode>(
+    manifests.map((manifest) => [
+      manifest.id,
+      {
+        ...manifest,
+        children: [],
+      },
+    ]),
+  );
+  const parentById = new Map<ManifestId, ManifestId>();
+
+  for (const manifest of manifests) {
+    const parentId = manifest.dependsOn.find((dependencyId) => nodesById.has(dependencyId));
+    if (parentId === undefined) continue;
+    parentById.set(manifest.id, parentId);
+  }
+
+  const roots: ManifestPlanNode[] = [];
+
+  for (const manifest of manifests) {
+    const node = nodesById.get(manifest.id);
+    if (node === undefined) continue;
+
+    const parentId = parentById.get(manifest.id);
+    if (parentId === undefined) {
+      roots.push(node);
+      continue;
+    }
+
+    const parent = nodesById.get(parentId);
+    if (parent === undefined) {
+      roots.push(node);
+      continue;
+    }
+
+    parent.children.push(node);
+  }
+
+  return roots;
 }
 
-class PlanStep {}
+function sortManifestsByDependencies(
+  manifests: readonly CompiledManifestDto[],
+): readonly CompiledManifestDto[] {
+  const byId = new Map(
+    manifests.map((manifest) => [manifest.id, manifest] as const),
+  );
+  const normalizedManifests = manifests.map((manifest) => ({
+    ...manifest,
+    dependsOn: resolveManifestDependencies(manifest, byId),
+  }));
+  const normalizedById = new Map(
+    normalizedManifests.map((manifest) => [manifest.id, manifest] as const),
+  );
+  const temporary = new Set<ManifestId>();
+  const permanent = new Set<ManifestId>();
+  const sorted: CompiledManifestDto[] = [];
+
+  for (const manifest of normalizedManifests) {
+    visitManifest(manifest, normalizedById, temporary, permanent, sorted);
+  }
+
+  return sorted;
+}
+
+function resolveManifestDependencies(
+  manifest: CompiledManifestDto,
+  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
+): ManifestId[] {
+  return manifest.dependsOn.map((dependencyId) =>
+    resolveManifestDependency(manifest, dependencyId, byId),
+  );
+}
+
+function resolveManifestDependency(
+  manifest: CompiledManifestDto,
+  dependencyId: ManifestId,
+  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
+): ManifestId {
+  const matches = uniqueManifestIds([
+    exactDependencyCandidate(dependencyId, byId),
+    ...relativeDependencyCandidates(manifest, dependencyId, byId),
+  ]);
+
+  if (matches.length === 1) {
+    const match = matches[0];
+    if (match === undefined) {
+      throw new UnexpectedEmptyDependencyMatchError(manifest.id, dependencyId);
+    }
+    return match;
+  }
+
+  if (matches.length === 0) {
+    throw new ManifestDependencyMissingError(manifest.id, dependencyId);
+  }
+
+  throw new ManifestDependencyAmbiguousError(manifest.id, dependencyId, matches);
+}
+
+function exactDependencyCandidate(
+  dependencyId: ManifestId,
+  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
+): ManifestId | null {
+  if (!byId.has(dependencyId)) return null;
+
+  return dependencyId;
+}
+
+function relativeDependencyCandidates(
+  manifest: CompiledManifestDto,
+  dependencyId: ManifestId,
+  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
+): readonly (ManifestId | null)[] {
+  const namespace = manifest.id.split(".").slice(0, -1);
+  const candidates: (ManifestId | null)[] = [];
+
+  for (let length = namespace.length; length >= 0; length -= 1) {
+    const candidate = toManifestId([...namespace.slice(0, length), dependencyId].join("."));
+    candidates.push(byId.has(candidate) ? candidate : null);
+  }
+
+  return candidates;
+}
+
+function uniqueManifestIds(
+  candidates: readonly (ManifestId | null)[],
+): ManifestId[] {
+  const unique = new Set<ManifestId>();
+
+  for (const candidate of candidates) {
+    if (candidate === null) continue;
+    unique.add(candidate);
+  }
+
+  return [...unique];
+}
+
+function visitManifest(
+  manifest: CompiledManifestDto,
+  byId: ReadonlyMap<ManifestId, CompiledManifestDto>,
+  temporary: Set<ManifestId>,
+  permanent: Set<ManifestId>,
+  sorted: CompiledManifestDto[],
+): void {
+  if (permanent.has(manifest.id)) return;
+  if (temporary.has(manifest.id)) {
+    throw new ManifestDependencyCycleError(manifest.id);
+  }
+
+  temporary.add(manifest.id);
+
+  for (const dependencyId of manifest.dependsOn) {
+    const dependency = byId.get(dependencyId);
+    if (!dependency) {
+      throw new ManifestDependencyMissingError(manifest.id, dependencyId);
+    }
+
+    visitManifest(dependency, byId, temporary, permanent, sorted);
+  }
+
+  temporary.delete(manifest.id);
+  permanent.add(manifest.id);
+  sorted.push(manifest);
+}
+
+function toManifestId(value: string): ManifestId {
+  const id = value.trim();
+  if (id.length === 0) {
+    throw new EmptyManifestIdError();
+  }
+
+  return id as ManifestId;
+}
