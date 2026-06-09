@@ -3,6 +3,7 @@ import { RuntimeRootMismatchError } from "../exceptions/runtime";
 import { app } from "../app";
 import { formatCommandError } from "../common/console";
 import { getActiveRuntime } from "../runtime";
+import { Manifest } from "../services/Manifest";
 import { manifestIdFromPath } from "../services/Manifest";
 import type { ExecutionPlanDto } from "../services/Plan";
 import { markdownView } from "../views/markdown";
@@ -19,6 +20,20 @@ export const manifestCmd = app
       })
       .run(async (input) => {
         await listManifestFiles(input.flags.dir);
+      }),
+  )
+  .command("validate", (cmd) =>
+    cmd
+      .meta({
+        description: "Validate discovered manifests and show all validation errors.",
+      })
+      .run(async (input) => {
+        try {
+          await validateManifestFiles(input.flags.dir);
+        } catch (error) {
+          process.exitCode = 1;
+          console.error(markdownView(formatCommandError(error)));
+        }
       }),
   )
   .command("plan", (cmd) =>
@@ -61,6 +76,44 @@ async function listManifestFiles(rootDir: string): Promise<void> {
   );
 }
 
+async function validateManifestFiles(rootDir: string): Promise<void> {
+  const runtime = getActiveRuntime();
+  assertRuntimeRoot(rootDir);
+
+  const manifestPaths = await runtime.manifestService.discover();
+  if (manifestPaths.length === 0) {
+    console.log("No manifests found.");
+    return;
+  }
+
+  const issues = await Promise.all(
+    manifestPaths.map(async (manifestPath) => {
+      try {
+        const manifest = await Manifest.load(rootDir, manifestPath);
+        manifest.parse();
+        return null;
+      } catch (error) {
+        return {
+          error,
+          path: manifestPath,
+        };
+      }
+    }),
+  );
+
+  const validationIssues = issues.filter(
+    (issue): issue is ManifestValidationIssue => issue !== null,
+  );
+
+  if (validationIssues.length === 0) {
+    console.log(markdownView("## Manifest Validation\n\nAll manifests valid."));
+    return;
+  }
+
+  process.exitCode = 1;
+  console.error(markdownView(renderManifestValidationReport(rootDir, validationIssues)));
+}
+
 async function listManifestPlan(rootDir: string): Promise<void> {
   const runtime = getActiveRuntime();
   assertRuntimeRoot(rootDir);
@@ -75,6 +128,7 @@ async function listManifestPlan(rootDir: string): Promise<void> {
 
     console.log(markdownView(renderManifestPlan(plan)));
   } catch (error) {
+    process.exitCode = 1;
     console.error(markdownView(formatCommandError(error)));
   }
 }
@@ -83,6 +137,34 @@ function assertRuntimeRoot(rootDir: string): void {
   const runtime = getActiveRuntime();
   if (runtime.rootDir === rootDir) return;
   throw new RuntimeRootMismatchError(rootDir, runtime.rootDir);
+}
+
+function renderManifestValidationReport(
+  rootDir: string,
+  issues: readonly ManifestValidationIssue[],
+): string {
+  const lines = ["## Manifest Validation Errors", ""];
+
+  for (const [index, issue] of issues.entries()) {
+    const relativePath = path.relative(rootDir, issue.path);
+    lines.push(`### ${index + 1}. \`${relativePath}\``);
+    lines.push("");
+    lines.push(indentBlock(formatCommandError(issue.error), "  "));
+    if (index < issues.length - 1) {
+      lines.push("");
+      lines.push("---");
+      lines.push("");
+    }
+  }
+
+  return lines.join("\n");
+}
+
+function indentBlock(text: string, prefix: string): string {
+  return text
+    .split("\n")
+    .map((line) => (line.length === 0 ? line : `${prefix}${line}`))
+    .join("\n");
 }
 
 function renderManifestPlan(plan: ExecutionPlanDto): string {
@@ -120,3 +202,8 @@ function stringifyConfig(config: unknown): string {
   if (serialized === undefined) return "{}";
   return serialized;
 }
+
+type ManifestValidationIssue = {
+  readonly error: unknown;
+  readonly path: string;
+};
