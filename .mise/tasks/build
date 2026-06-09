@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+#MISE description="Build the project"
+#MISE depends=["setup"]
+#MISE sources=["src/**/*"]
+#MISE outputs=["dist/boxfiles-windows-x64.exe", "dist/boxfiles-linux-x64", "dist/boxfiles-linux-arm64", "dist/boxfiles-darwin-x64", "dist/boxfiles-darwin-arm64", "dist/pkg/index.ts", "dist/pkg/index.d.ts"]
 set -euo pipefail
 
 mkdir -p dist
@@ -8,3 +12,5 @@ bun build ./index.ts --compile --target=bun-linux-arm64 --outfile=dist/boxfiles-
 bun build ./index.ts --compile --target=bun-darwin-x64 --outfile=dist/boxfiles-darwin-x64
 bun build ./index.ts --compile --target=bun-darwin-arm64 --outfile=dist/boxfiles-darwin-arm64
 bun build ./index.ts --compile --target=bun-windows-x64 --outfile=dist/boxfiles-windows-x64.exe
+
+bun build ./src/index.ts --outdir dist/pkg --target bun
