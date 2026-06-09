@@ -108,7 +108,7 @@ export class PlanService {
             plan: null,
             ctx: {
               rootDir: this.rootDir,
-              facts: this.context.facts,
+              facts: this.context,
               manifest: manifest.manifest,
             },
           }),

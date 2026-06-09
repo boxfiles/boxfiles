@@ -60,9 +60,7 @@ export type FactCollision = Type.Static<typeof FactCollisionSchema>;
 export type FactMetadata = Type.Static<typeof FactMetadataSchema>;
 export type FactKey = Type.Static<typeof FactKeySchema>;
 export type ContextFact = Type.Static<typeof ContextFactSchema>;
-export type ContextSnapshot = Readonly<
-    Type.Static<typeof ContextSnapshotSchema>
->;
+export type ContextSnapshot = Readonly<Record<string, unknown>>;
 
 export class ContextService {
     private readonly facts = new Map<FactKey, ContextFact>();
