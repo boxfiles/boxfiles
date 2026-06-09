@@ -1,113 +1,127 @@
----
-name: Publish Release Assets
+name: Publish
+run-name: Publish ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target || inputs.target }}-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.tag || inputs.tag }}
 
 on:
-  release:
-    types:
-      - published
   workflow_dispatch:
     inputs:
       target:
-        description: moon project id to publish
+        description: "moon project id to publish"
         required: true
-        default: cli
         type: string
       tag:
-        description: Release tag to build and upload
+        description: "release env/channel (e.g. production, development, latest, next)"
         required: true
+        default: "next"
         type: string
+  repository_dispatch:
+    types: [publish-package]
 
 permissions:
+  id-token: write
   contents: write
+  packages: write
+
+concurrency:
+  group: publish-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target || inputs.target }}-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.tag || inputs.tag }}
+  cancel-in-progress: true
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-
+    timeout-minutes: 20
+    environment:
+      name: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target || inputs.target }}-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.tag || inputs.tag }}
+    env:
+      PUBLISH_TARGET: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target || inputs.target }}
+      PUBLISH_TAG: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.tag || inputs.tag }}
     steps:
-      - name: Resolve target and tag
-        id: meta
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          if [ -n "${{ github.event.release.tag_name }}" ]; then
-            echo "tag=${{ github.event.release.tag_name }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "tag=${{ inputs.tag }}" >> "$GITHUB_OUTPUT"
-          fi
-
-          if [ -n "${{ inputs.target }}" ]; then
-            echo "target=${{ inputs.target }}" >> "$GITHUB_OUTPUT"
-          else
-            echo "target=cli" >> "$GITHUB_OUTPUT"
-          fi
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          ref: ${{ steps.meta.outputs.tag }}
           fetch-depth: 0
-          fetch-tags: true
 
       - name: Setup Toolchain
-        uses: moonrepo/setup-toolchain@v0
+        uses: moonrepo/setup-toolchain@8794f0318b9df4a43a5ddc23cefd16f595b423dd # v0
         with:
           auto-install: true
           auto-setup: true
 
-      - name: Validate target
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          projects_json="$(moon query projects)"
-          if ! jq -e --arg target "${{ steps.meta.outputs.target }}" '.projects[] | select(.id == $target)' >/dev/null <<<"${projects_json}"; then
-            valid_targets="$(jq -r '.projects[].id' <<<"${projects_json}" | sort | paste -sd ', ' -)"
-            echo "ERROR: Unknown PUBLISH_TARGET '${{ steps.meta.outputs.target }}'." >&2
-            echo "Valid targets: ${valid_targets}" >&2
-            exit 1
-          fi
-
-      - name: Build publish target
-        run: moon run ${{ steps.meta.outputs.target }}:publish
-
-      - name: Resolve release files
-        id: files
-        shell: bash
-        run: |
-          set -euo pipefail
-
-          target='${{ steps.meta.outputs.target }}'
-          projects_json="$(moon query projects)"
-          project_root="$(
-            jq -r --arg target "${target}" '.projects[] | select(.id == $target) | .root' <<<"${projects_json}")"
-
-          if [ -z "${project_root}" ] || [ "${project_root}" = "null" ]; then
-            echo "ERROR: unable to resolve project root for '${target}'." >&2
-            exit 1
-          fi
-
-          tasks_json="$(moon query tasks --project "${target}")"
-          outputs_query='.tasks[$target].publish.outputs[]?.file | select(length > 0) | "\($root)/\(.)"'
-          files="$(jq -r --arg target "${target}" --arg root "${project_root}" "${outputs_query}" <<<"${tasks_json}")"
-
-          if [ -z "${files}" ]; then
-            echo "ERROR: publish task for '${target}' does not declare outputs." >&2
-            exit 1
-          fi
-
-          {
-            echo 'files<<EOF'
-            printf '%s\n' "${files}"
-            echo 'EOF'
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Upload release assets
-        uses: softprops/action-gh-release@v2
+      - name: Restore Moon cache
+        uses: ./.github/actions/moon-cache
         with:
-          tag_name: ${{ steps.meta.outputs.tag }}
-          files: |
-            ${{ steps.files.outputs.files }}
+          key-prefix: moon-publish
+          cache-version: v1
+
+      - name: Validate publish target
+        run: |
+          set -euo pipefail
+
+          if [ -z "${PUBLISH_TARGET}" ]; then
+            echo "ERROR: PUBLISH_TARGET is empty. Provide a moon project id." >&2
+            {
+              echo "## Publish Validation Failed"
+              echo
+              echo "- reason: empty target"
+              echo "- tag: \`${PUBLISH_TAG}\`"
+              echo "- trigger: \`${{ github.event_name }}\`"
+            } >> "${GITHUB_STEP_SUMMARY}"
+            exit 1
+          fi
+
+          projects_json="$(moon query projects)"
+          if ! jq -e --arg target "${PUBLISH_TARGET}" '.projects[] | select(.id == $target)' >/dev/null <<<"${projects_json}"; then
+            valid_targets="$(jq -r '.projects[].id' <<<"${projects_json}" | sort | paste -sd ', ' -)"
+
+            echo "ERROR: Unknown PUBLISH_TARGET '${PUBLISH_TARGET}'." >&2
+            echo "Valid targets: ${valid_targets}" >&2
+
+            {
+              echo "## Publish Validation Failed"
+              echo
+              echo "- reason: unknown target"
+              echo "- target: \`${PUBLISH_TARGET}\`"
+              echo "- tag: \`${PUBLISH_TAG}\`"
+              echo "- trigger: \`${{ github.event_name }}\`"
+              echo
+              echo "### Valid moon project ids"
+              echo
+              echo "\`${valid_targets}\`"
+            } >> "${GITHUB_STEP_SUMMARY}"
+
+            exit 1
+          fi
+
+      - name: Publish target(s)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ github.token }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: true
+          PUBLISH_TARGET: ${{ env.PUBLISH_TARGET }}
+          PUBLISH_TAG: ${{ env.PUBLISH_TAG }}
+        run: |
+          set -euo pipefail
+          moon run ${PUBLISH_TARGET}:publish
+      - name: Publish summary
+        if: always()
+        run: |
+          set -euo pipefail
+          {
+            echo "## Publish Summary"
+            echo
+            echo "| Field | Value |"
+            echo "|---|---|"
+            echo "| target | \`${PUBLISH_TARGET}\` |"
+            echo "| tag | \`${PUBLISH_TAG}\` |"
+            echo "| trigger | \`${{ github.event_name }}\` |"
+            echo "| result | \`${{ job.status }}\` |"
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Moon run report summary
+        if: always()
+        continue-on-error: true
+        uses: moonrepo/run-report-action@bfb317b1a2fd5b879d7c14d6d7af6360178fd879 # v1.9.0
+        with:
+          access-token: ${{ github.token }}
+          skip-comment: "true"

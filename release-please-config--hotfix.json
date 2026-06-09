@@ -1,7 +1,6 @@
 {
-  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
   "separate-pull-requests": false,
-  "versioning": "always-bump-minor",
+  "versioning": "always-bump-patch",
   "bump-patch-for-minor-pre-major": true,
   "release-type": "node",
   "packages": {
@@ -70,5 +69,6 @@
     {
       "type": "node-workspace"
     }
-  ]
+  ],
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
 }
