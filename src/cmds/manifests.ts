@@ -1,5 +1,7 @@
 import * as path from "node:path";
+import { RuntimeRootMismatchError } from "../exceptions/runtime";
 import { app } from "../app";
+import { formatCommandError } from "../common/console";
 import { getActiveRuntime } from "../runtime";
 import { manifestIdFromPath } from "../services/Manifest";
 import type { ExecutionPlanDto } from "../services/Plan";
@@ -16,9 +18,7 @@ export const manifestCmd = app
         description: "List discovered boxfile manifest files.",
       })
       .run(async (input) => {
-        await runManifestCommand(async () => {
-          await listManifestFiles(input.flags.dir);
-        });
+        await listManifestFiles(input.flags.dir);
       }),
   )
   .command("plan", (cmd) =>
@@ -27,25 +27,9 @@ export const manifestCmd = app
         description: "Show planned manifest list.",
       })
       .run(async (input) => {
-        await runManifestCommand(async () => {
-          await listManifestPlan(input.flags.dir);
-        });
+        await listManifestPlan(input.flags.dir);
       }),
   );
-
-async function runManifestCommand(command: () => Promise<void>): Promise<void> {
-  try {
-    await command();
-  } catch (error) {
-    process.exitCode = 1;
-    console.error(formatCommandError(error));
-  }
-}
-
-function formatCommandError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
-}
 
 async function listManifestFiles(rootDir: string): Promise<void> {
   const runtime = getActiveRuntime();
@@ -80,36 +64,40 @@ async function listManifestFiles(rootDir: string): Promise<void> {
 async function listManifestPlan(rootDir: string): Promise<void> {
   const runtime = getActiveRuntime();
   assertRuntimeRoot(rootDir);
-  const plan = await runtime.manifestService.plan({ facts: {} });
 
-  if (plan.manifests.length === 0) {
-    console.log("No manifests found.");
-    return;
+  try {
+    const plan = await runtime.manifestService.plan({ facts: {} });
+
+    if (plan.manifests.length === 0) {
+      console.log("No manifests found.");
+      return;
+    }
+
+    console.log(markdownView(renderManifestPlan(plan)));
+  } catch (error) {
+    console.error(markdownView(formatCommandError(error)));
   }
-
-  console.log(markdownView(renderManifestPlan(plan)));
 }
 
 function assertRuntimeRoot(rootDir: string): void {
   const runtime = getActiveRuntime();
   if (runtime.rootDir === rootDir) return;
-  throw new Error(
-    `Runtime root mismatch: expected ${rootDir}, got ${runtime.rootDir}`,
-  );
+  throw new RuntimeRootMismatchError(rootDir, runtime.rootDir);
 }
 
 function renderManifestPlan(plan: ExecutionPlanDto): string {
-  return [
-    "## Manifest Plan\n",
-    ...plan.manifests.flatMap((manifest, index) => [
-      `### ${index + 1}. ${manifest.id}`,
-      `- path: \`${manifest.path}\``,
-      `- files: \`${manifest.manifest.filesDir}\``,
-      ...renderList("- dependencies", manifest.dependsOn, (dep) => dep),
-      `- steps: ${manifest.steps.length}`,
-      "",
-    ]),
-  ].join("\n");
+  const header = "## Manifest Plan\n";
+
+  const list = plan.manifests.flatMap((manifest, index) => [
+    `### ${index + 1}. ${manifest.id}`,
+    `- path: \`${manifest.path}\``,
+    `- files: \`${manifest.manifest.filesDir}\``,
+    ...renderList("- dependencies", manifest.dependsOn, (dep) => dep),
+    `- steps: ${manifest.steps.length}`,
+    "",
+  ]);
+
+  return [header, ...list].join("\n");
 }
 
 function renderList<T>(

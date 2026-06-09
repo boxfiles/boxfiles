@@ -9,6 +9,11 @@ import {
     BrandedStringSchema,
     NonBlankStringSchema,
 } from "../common/schema";
+import {
+    DuplicateContextFactError,
+    EmptyFactKeyError,
+    InvalidFactCollisionPolicyError,
+} from "../exceptions/context";
 
 
 export const FactSourceSchema = Type.Union([
@@ -75,7 +80,7 @@ export class ContextService {
     static factKey(value: string): FactKey {
         const key = value.trim();
         if (key.length === 0) {
-            throw new Error("Fact key must not be empty");
+            throw new EmptyFactKeyError();
         }
 
         return key as FactKey;
@@ -90,7 +95,7 @@ export class ContextService {
 
         switch (fact.metadata.collision) {
             case "error":
-                throw new Error(`Context fact already exists: ${fact.key}`);
+                throw new DuplicateContextFactError(fact.key);
             case "keep-first":
                 return;
             case "override":
@@ -114,5 +119,5 @@ export class ContextService {
 }
 
 function assertNever(value: never): never {
-    throw new Error(`Unexpected fact collision policy: ${String(value)}`);
+    throw new InvalidFactCollisionPolicyError(String(value));
 }

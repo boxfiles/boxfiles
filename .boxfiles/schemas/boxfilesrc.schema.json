@@ -1,0 +1,81 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxfiles.dev/schemas/boxfilesrc.schema.json",
+  "title": "Boxfiles rc config",
+  "description": "Project or user config for plugins, settings, and static facts loaded from .boxfilesrc files.",
+  "type": "object",
+  "properties": {
+    "plugins": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string",
+            "pattern": "^npm:[^\\s]+$",
+            "description": "NPM plugin specifier, for example npm:@someone/pkg@1.2.3."
+          },
+          {
+            "type": "string",
+            "pattern": "^github:[^\\s]+$",
+            "description": "GitHub plugin specifier, for example github:someone/reponame/path/extension.ts#tag-or-commitish."
+          },
+          {
+            "type": "string",
+            "pattern": "^(\\.{1,2}/|/)[^\\s]+$",
+            "description": "Local plugin path, for example ./some-folder/something.ts."
+          }
+        ]
+      },
+      "description": "Explicit plugin modules to load before fact gathering and manifest planning."
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "facts": {
+          "type": "object",
+          "properties": {
+            "collision": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "const": "error"
+                },
+                {
+                  "type": "string",
+                  "const": "override"
+                },
+                {
+                  "type": "string",
+                  "const": "keep-first"
+                }
+              ]
+            }
+          },
+          "additionalProperties": false,
+          "description": "Default collision policy for facts loaded from this config file."
+        },
+        "plugins": {
+          "type": "object",
+          "properties": {
+            "allowRemote": {
+              "type": "boolean",
+              "description": "Whether npm: and github: plugin references may be loaded from this config."
+            }
+          },
+          "additionalProperties": false,
+          "description": "Plugin-loading policy hints for this config file."
+        }
+      },
+      "additionalProperties": false,
+      "description": "Config-level settings that affect config-derived facts and plugin loading."
+    },
+    "facts": {
+      "type": "object",
+      "patternProperties": {
+        "^.*$": {}
+      },
+      "description": "Static facts contributed by this config file."
+    }
+  },
+  "additionalProperties": false
+}

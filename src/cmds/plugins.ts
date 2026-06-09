@@ -1,4 +1,6 @@
+import { RuntimeRootMismatchError } from "../exceptions/runtime";
 import { app } from "../app";
+import { formatCommandError } from "../common/console";
 import { getActiveRuntime } from "../runtime";
 import { markdownView } from "../views/markdown";
 
@@ -33,15 +35,11 @@ function runPluginsCommand(command: () => void): void {
   }
 }
 
-function formatCommandError(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  return String(error);
-}
 
 function listPlugins(rootDir: string): void {
   const runtime = getActiveRuntime();
   if (runtime.pluginService.rootDir !== rootDir) {
-    throw new Error(`Runtime root mismatch: expected ${rootDir}, got ${runtime.pluginService.rootDir}`);
+    throw new RuntimeRootMismatchError(rootDir, runtime.pluginService.rootDir);
   }
 
   const plugins = runtime.pluginService.listPlugins();

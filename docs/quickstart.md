@@ -26,6 +26,9 @@ mkdir -p modules/files plugins
 
 Boxfiles discovers `.yaml`, `.yml`, and `.toml` manifests below the selected root. Put manifests in manifest directories. Copy sources come from a `files/` directory next to the current manifest, so manifest authors reference `gitconfig`, not `./files/gitconfig`.
 
+
+Root `boxfiles.yaml`, `boxfiles.yml`, and `boxfiles.toml` are reserved names. Boxfiles ignores them during manifest discovery. Use `boxfile.yaml`, `boxfile.yml`, or `boxfile.toml` for a root manifest, or put manifests under directories like `modules/`.
+
 Create `modules/git.yaml`:
 
 ```yaml
@@ -158,7 +161,25 @@ steps:
       name: git
 ```
 
-## 6. Add context-only plugins
+## 6. Reference manifest dependencies
+
+Manifest IDs are derived from manifest paths relative to the selected root. The extension is removed and path separators become dots.
+
+```text
+base/foundation.toml -> base.foundation
+demo/base/foundation.toml -> demo.base.foundation
+```
+
+`dependsOn` accepts full manifest IDs or shorter IDs that resolve through enclosing namespaces.
+
+```yaml
+dependsOn:
+  - base.foundation
+```
+
+Dependency resolution succeeds only when the dependency token maps to one unique manifest. If multiple unique manifests match, Boxfiles fails and requires the full manifest ID.
+
+## 7. Add context-only plugins
 
 Plugins can also expose facts without actions:
 
@@ -176,7 +197,7 @@ export default createPlugin({
 
 Context fact keys should be namespaced. Resolvers run during fact gathering and must not mutate workstation state.
 
-## 7. Use manifest context in providers
+## 8. Use manifest context in providers
 
 Action providers receive the manifest being planned or executed through `ctx.manifest`:
 
@@ -207,7 +228,7 @@ async plan({ action, ctx }) {
 
 `ctx.manifest.filesDir` is relative to `ctx.rootDir`.
 
-## 8. Plan or apply
+## 9. Plan or apply
 
 Compile a manifest plan:
 

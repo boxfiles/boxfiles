@@ -2,6 +2,7 @@ import type { CrustPlugin } from "@crustjs/core";
 import { builtInPlugins } from "./providers";
 import { ManifestService } from "./services/Manifest";
 import { PluginService } from "./services/Plugins";
+import { RuntimeNotActiveError } from "./exceptions/runtime";
 
 const RUNTIME_STATE_KEY = "boxfiles.runtime";
 
@@ -36,7 +37,7 @@ export function clearActiveRuntime(): void {
 
 export function getActiveRuntime(): CliRuntime {
   if (activeRuntime !== null) return activeRuntime;
-  throw new Error("Boxfiles runtime is not active");
+  throw new RuntimeNotActiveError();
 }
 
 export function boxfilesRuntimePlugin(): CrustPlugin {

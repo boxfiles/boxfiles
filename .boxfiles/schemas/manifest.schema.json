@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://boxfiles.dev/schemas/manifest.schema.json",
+  "title": "Boxfiles manifest",
+  "description": "A Boxfiles manifest file containing dependencies, conditions, and action steps.",
+  "type": "object",
+  "required": [
+    "steps"
+  ],
+  "properties": {
+    "dependsOn": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "pattern": ".*\\S.*"
+      }
+    },
+    "when": {
+      "type": "string",
+      "pattern": ".*\\S.*"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "uses"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": ".*\\S.*"
+          },
+          "uses": {
+            "type": "string",
+            "pattern": ".*\\S.*"
+          },
+          "with": {},
+          "when": {
+            "type": "string",
+            "pattern": ".*\\S.*"
+          }
+        }
+      }
+    }
+  }
+}

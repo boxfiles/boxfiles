@@ -3,6 +3,21 @@ import type { ContextFact, ContextService } from "./Context";
 import { type ContextSnapshot, ContextService as RuntimeContextService } from "./Context";
 import type { ManifestContextDto, ResolvedStep } from "./Manifest";
 import type { ActionPlanDto } from "./Plan";
+import {
+    ActionProviderAlreadyRegisteredError,
+    ActionProviderKindError,
+    ActionProviderMethodError,
+    ActionProviderSchemaError,
+    ActionProviderShapeError,
+    PluginActionsShapeError,
+    PluginAlreadyRegisteredError,
+    PluginContextEntryError,
+    PluginContextKeyError,
+    PluginContextShapeError,
+    PluginContextValueError,
+    PluginIdError,
+    PluginModuleShapeError,
+} from "../exceptions/plugins";
 
 export type ValidationResult<TConfig> =
     | { readonly success: true; readonly value: TConfig }
@@ -110,7 +125,7 @@ export class PluginService {
     registerPlugin(plugin: BoxfilePlugin, source: PluginSource = "user"): void {
         assertPluginShape(plugin);
         if (this.pluginRegistry.has(plugin.id)) {
-            throw new Error(`Plugin already registered: ${plugin.id}`);
+            throw new PluginAlreadyRegisteredError(plugin.id);
         }
 
         this.pluginRegistry.set(plugin.id, plugin);
@@ -167,7 +182,7 @@ export class PluginService {
     ): void {
         assertActionProviderShape(provider, pluginId);
         if (this.actionProviders.has(provider.kind)) {
-            throw new Error(`Action provider already registered: ${provider.kind}`);
+            throw new ActionProviderAlreadyRegisteredError(provider.kind);
         }
 
         this.actionProviders.set(provider.kind, provider);
@@ -189,7 +204,7 @@ export class PluginService {
             : entry;
 
         if (!isJsonValue(value)) {
-            throw new Error(`Plugin ${pluginId} context value is not JSON-ish: ${key}`);
+            throw new PluginContextValueError(pluginId, key);
         }
 
         return {
@@ -219,11 +234,11 @@ export function normalizePluginModule(moduleValue: unknown): BoxfilePlugin {
 
 function assertPluginShape(value: unknown): asserts value is BoxfilePlugin {
     if (!isObject(value)) {
-        throw new Error("Plugin module must export a plugin object");
+        throw new PluginModuleShapeError();
     }
 
     if (!isNonBlankString(value.id)) {
-        throw new Error("Plugin id must be a non-empty string");
+        throw new PluginIdError();
     }
 
     if (value.context !== undefined) {
@@ -240,18 +255,18 @@ function assertContextShape(
     value: unknown,
 ): asserts value is ContextDefinition {
     if (!isPlainObject(value)) {
-        throw new Error(`Plugin ${pluginId} context must be a plain object`);
+        throw new PluginContextShapeError(pluginId);
     }
 
     for (const [key, entry] of Object.entries(value)) {
         if (!isNonBlankString(key)) {
-            throw new Error(`Plugin ${pluginId} context key must be non-empty`);
+            throw new PluginContextKeyError(pluginId);
         }
 
         if (typeof entry === "function") continue;
         if (isJsonValue(entry)) continue;
 
-        throw new Error(`Plugin ${pluginId} context entry is invalid: ${key}`);
+        throw new PluginContextEntryError(pluginId, key);
     }
 }
 
@@ -260,7 +275,7 @@ function assertActionsShape(
     value: unknown,
 ): asserts value is ActionProviderMap {
     if (!isPlainObject(value)) {
-        throw new Error(`Plugin ${pluginId} actions must be a plain object`);
+        throw new PluginActionsShapeError(pluginId);
     }
 
     for (const provider of Object.values(value)) {
@@ -273,27 +288,27 @@ function assertActionProviderShape(
     pluginId: string,
 ): asserts value is ActionProvider<Type.TSchema> {
     if (!isObject(value)) {
-        throw new Error(`Plugin ${pluginId} action provider must be an object`);
+        throw new ActionProviderShapeError(pluginId);
     }
 
     if (!isNonBlankString(value.kind)) {
-        throw new Error(`Plugin ${pluginId} action provider kind must be non-empty`);
+        throw new ActionProviderKindError(pluginId);
     }
 
     if (!isObject(value.schema)) {
-        throw new Error(`Plugin ${pluginId} action provider ${value.kind} must include schema`);
+        throw new ActionProviderSchemaError(pluginId, value.kind);
     }
 
     if (typeof value.validate !== "function") {
-        throw new Error(`Plugin ${pluginId} action provider ${value.kind} must include validate()`);
+        throw new ActionProviderMethodError(pluginId, value.kind, "validate");
     }
 
     if (typeof value.plan !== "function") {
-        throw new Error(`Plugin ${pluginId} action provider ${value.kind} must include plan()`);
+        throw new ActionProviderMethodError(pluginId, value.kind, "plan");
     }
 
     if (typeof value.apply !== "function") {
-        throw new Error(`Plugin ${pluginId} action provider ${value.kind} must include apply()`);
+        throw new ActionProviderMethodError(pluginId, value.kind, "apply");
     }
 }
 

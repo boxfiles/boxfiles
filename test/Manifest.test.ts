@@ -59,10 +59,10 @@ function isManifestDirectoryEntry(value: unknown): value is ManifestDirectoryEnt
 }
 
 describe("ManifestService.discover", () => {
-  test("discovers manifest files in fixture directories", async () => {
+  test("discovers manifest files in demo directories", async () => {
     const harness = createManifestTestHarness();
     await harness.writeManifest(
-      "tests/fixtures/workstation.yaml",
+      "demo/workstation.yaml",
       `steps:
   - uses: copy
     with:
@@ -74,7 +74,24 @@ describe("ManifestService.discover", () => {
     const manifestPaths = await harness.service.discover();
 
     expect(manifestPaths.map((manifestPath) => path.posix.relative(harness.rootDir, manifestPath))).toEqual([
-      "tests/fixtures/workstation.yaml",
+      "demo/workstation.yaml",
+    ]);
+  });
+
+
+  test("ignores reserved root boxfiles filenames", async () => {
+    const harness = createManifestTestHarness();
+    await harness.writeManifest("boxfiles.yaml", "steps: []\n");
+    await harness.writeManifest("boxfiles.yml", "steps: []\n");
+    await harness.writeManifest("boxfiles.toml", "steps = []\n");
+    await harness.writeManifest("boxfile.yaml", "steps: []\n");
+    await harness.writeManifest("modules/boxfiles.yaml", "steps: []\n");
+
+    const manifestPaths = await harness.service.discover();
+
+    expect(manifestPaths.map((manifestPath) => path.posix.relative(harness.rootDir, manifestPath))).toEqual([
+      "boxfile.yaml",
+      "modules/boxfiles.yaml",
     ]);
   });
 });
@@ -131,6 +148,58 @@ steps:
     });
   });
 
+
+  test("resolves manifest dependencies relative to the current manifest namespace", async () => {
+    const harness = createManifestTestHarness();
+    await harness.writeManifest(
+      "demo/base/foundation.yaml",
+      `steps: []
+`,
+    );
+    await harness.writeManifest(
+      "demo/applications/package-catalog.yaml",
+      `dependsOn:
+  - base.foundation
+steps: []
+`,
+    );
+
+    const plan = await harness.service.plan({ facts: {} });
+
+    expect(plan.manifests.map((manifest) => String(manifest.id))).toEqual([
+      "demo.base.foundation",
+      "demo.applications.package-catalog",
+    ]);
+    expect(plan.manifests[1]?.dependsOn.map((dependencyId) => String(dependencyId))).toEqual([
+      "demo.base.foundation",
+    ]);
+  });
+
+  test("fails loudly for ambiguous manifest dependency references", async () => {
+    const harness = createManifestTestHarness();
+    await harness.writeManifest(
+      "base/foundation.yaml",
+      `steps: []
+`,
+    );
+    await harness.writeManifest(
+      "demo/base/foundation.yaml",
+      `steps: []
+`,
+    );
+    await harness.writeManifest(
+      "demo/applications/package-catalog.yaml",
+      `dependsOn:
+  - base.foundation
+steps: []
+`,
+    );
+
+    await expect(harness.service.plan({ facts: {} })).rejects.toThrow(
+      "Manifest demo.applications.package-catalog dependency base.foundation is ambiguous: base.foundation, demo.base.foundation",
+    );
+  });
+
   test("fails loudly for unknown action provider", async () => {
     const harness = createManifestTestHarness();
     await harness.writeManifest(
@@ -176,6 +245,33 @@ steps: []
     await expect(harness.service.plan({ facts: {} })).rejects.toThrow(
       "Manifest dependent depends on missing manifest: missing",
     );
+  });
+
+
+  test("deduplicates duplicate dependency candidates for one unique manifest", async () => {
+    const harness = createManifestTestHarness();
+    await harness.writeManifest(
+      "base/foundation.yaml",
+      `steps: []
+`,
+    );
+    await harness.writeManifest(
+      "applications/package-catalog.yaml",
+      `dependsOn:
+  - base.foundation
+steps: []
+`,
+    );
+
+    const plan = await harness.service.plan({ facts: {} });
+
+    expect(plan.manifests.map((manifest) => String(manifest.id))).toEqual([
+      "base.foundation",
+      "applications.package-catalog",
+    ]);
+    expect(plan.manifests[1]?.dependsOn.map((dependencyId) => String(dependencyId))).toEqual([
+      "base.foundation",
+    ]);
   });
 
   test("fails loudly for dependency cycles", async () => {
