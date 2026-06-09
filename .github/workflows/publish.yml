@@ -78,17 +78,22 @@ jobs:
         run: |
           set -euo pipefail
 
+          target='${{ steps.meta.outputs.target }}'
           projects_json="$(moon query projects)"
-          project_root="$(jq -r --arg target "${{ steps.meta.outputs.target }}" '.projects[] | select(.id == $target) | .root' <<<"${projects_json}")"
+          project_root="$(
+            jq -r --arg target "${target}" '.projects[] | select(.id == $target) | .root' <<<"${projects_json}")"
+
           if [ -z "${project_root}" ] || [ "${project_root}" = "null" ]; then
-            echo "ERROR: unable to resolve project root for '${{ steps.meta.outputs.target }}'." >&2
+            echo "ERROR: unable to resolve project root for '${target}'." >&2
             exit 1
           fi
 
-          tasks_json="$(moon query tasks --project ${{ steps.meta.outputs.target }})"
-          files="$(jq -r --arg target "${{ steps.meta.outputs.target }}" --arg root "${project_root}" '.tasks[$target].publish.outputs[]?.file | select(length > 0) | "\($root)/\(.)"' <<<"${tasks_json}")"
+          tasks_json="$(moon query tasks --project "${target}")"
+          outputs_query='.tasks[$target].publish.outputs[]?.file | select(length > 0) | "\($root)/\(.)"'
+          files="$(jq -r --arg target "${target}" --arg root "${project_root}" "${outputs_query}" <<<"${tasks_json}")"
+
           if [ -z "${files}" ]; then
-            echo "ERROR: publish task for '${{ steps.meta.outputs.target }}' does not declare outputs." >&2
+            echo "ERROR: publish task for '${target}' does not declare outputs." >&2
             exit 1
           fi
 
