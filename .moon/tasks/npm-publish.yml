@@ -53,6 +53,8 @@ tasks:
       # if [ -n "${GITHUB_ACTIONS:-}" ]; then
       # args+=(--provenance)
       # fi
+      #
+      echo "> npm publish ${args[*]}"
 
       npm publish "${args[@]}"
     tags:
