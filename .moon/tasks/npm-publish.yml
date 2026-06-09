@@ -40,7 +40,13 @@ tasks:
         prerelease_version="${base_version}-next.${build_number}"
 
         echo "Preparing next prerelease: ${current_version} -> ${prerelease_version}"
-        npm version "${prerelease_version}" --no-git-tag-version --allow-same-version
+        node -e '
+          const fs = require("node:fs");
+          const pkgPath = "package.json";
+          const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
+          pkg.version = process.argv[1];
+          fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
+        ' "${prerelease_version}"
       fi
 
       args=(--access public --tag "${publish_tag}")
