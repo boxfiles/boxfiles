@@ -12,5 +12,7 @@ tags:
 ## Table of contents
 
 - [Quickstart](./quickstart.md)
+- [User quickstart](./user-quickstart.md)
+- [Plugin author quickstart](./plugin-author-quickstart.md)
 - [Plugins](./plugins.md)
 - [Built-in plugins](./builtin-plugins.md)
