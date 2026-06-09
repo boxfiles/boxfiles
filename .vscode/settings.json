@@ -17,6 +17,7 @@
     ],
     "./.moon/cache/schemas/workspace.json": [".moon/workspace.yml"],
     "./.moon/cache/schemas/toolchains.json": [".moon/toolchains.yml"],
+    "./.moon/cache/schemas/tasks.json": [".moon/tasks/*.yml"],
     "https://json.schemastore.org/github-workflow.json": [
       ".github/workflows/*.yml",
       ".github/workflows/*.yaml"

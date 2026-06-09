@@ -1,8 +1,13 @@
 ---
 $schema: "file://../../.moon/cache/schemas/project.json"
+dependsOn:
+  - core
 
 language: typescript
 layer: library
+
+tags:
+  - npm-publish
 
 toolchains:
   default: ["javascript", "bun"]

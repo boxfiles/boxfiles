@@ -1,0 +1,17 @@
+---
+$schema: "file://../cache/schemas/tasks.json"
+
+inheritedBy:
+  tags: npm-publish
+
+tasks:
+  npm-publish:
+    deps:
+      - "^:npm-publish"
+      - "~:build"
+    command: "npm publish --access public"
+    tags:
+      - npm-publish
+    options:
+      cache: false
+      runInCI: false

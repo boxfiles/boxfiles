@@ -3,26 +3,32 @@
   "version": "0.0.1",
   "type": "module",
   "dependencies": {
+    "@boxfiles/core": "0.0.1",
+    "@boxfiles/provider-copy": "0.0.1",
+    "@boxfiles/provider-gpu": "0.0.1",
+    "@boxfiles/provider-link": "0.0.1",
+    "@boxfiles/provider-network": "0.0.1",
+    "@boxfiles/provider-os": "0.0.1",
+    "@boxfiles/provider-ownership": "0.0.1",
+    "@boxfiles/provider-packages": "0.0.1",
+    "@boxfiles/provider-permissions": "0.0.1",
+    "@boxfiles/provider-remove": "0.0.1",
+    "@boxfiles/provider-rename": "0.0.1",
+    "@boxfiles/provider-run": "0.0.1",
+    "@boxfiles/provider-storage": "0.0.1",
+    "@boxfiles/provider-user": "0.0.1",
     "@crustjs/core": "^0.0.19",
     "@crustjs/plugins": "^0.1.2",
-    "@boxfiles/core": "workspace:*",
-    "typebox": "^1.2.2",
-    "@boxfiles/provider-copy": "workspace:*",
-    "@boxfiles/provider-gpu": "workspace:*",
-    "@boxfiles/provider-link": "workspace:*",
-    "@boxfiles/provider-network": "workspace:*",
-    "@boxfiles/provider-os": "workspace:*",
-    "@boxfiles/provider-ownership": "workspace:*",
-    "@boxfiles/provider-packages": "workspace:*",
-    "@boxfiles/provider-permissions": "workspace:*",
-    "@boxfiles/provider-remove": "workspace:*",
-    "@boxfiles/provider-rename": "workspace:*",
-    "@boxfiles/provider-run": "workspace:*",
-    "@boxfiles/provider-storage": "workspace:*",
-    "@boxfiles/provider-user": "workspace:*"
+    "typebox": "^1.2.2"
   },
   "devDependencies": {
     "@types/bun": "latest",
     "typescript": "^5"
+  },
+  "files": [
+    "src"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }

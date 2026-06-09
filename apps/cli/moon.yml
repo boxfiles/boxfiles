@@ -1,6 +1,24 @@
 ---
+dependsOn:
+  - core
+  - provider-copy
+  - provider-gpu
+  - provider-link
+  - provider-network
+  - provider-os
+  - provider-ownership
+  - provider-packages
+  - provider-permissions
+  - provider-remove
+  - provider-rename
+  - provider-run
+  - provider-storage
+  - provider-user
 language: typescript
 layer: application
+
+tags:
+  - npm-publish
 
 toolchains:
   default: ["javascript", "bun"]
