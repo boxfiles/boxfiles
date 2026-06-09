@@ -5,6 +5,8 @@
   // Moon schema cache:
   // project.json, workspace.json, toolchains.json, tasks.json,
   // template.json, template-frontmatter.json, extensions.json
+  // GitHub Actions workflows:
+  // .github/workflows/*
   "yaml.schemaStore.enable": false,
   "yaml.schemas": {
     "./.moon/cache/schemas/project.json": [
@@ -14,6 +16,10 @@
       "pkgs/*/moon.yml"
     ],
     "./.moon/cache/schemas/workspace.json": [".moon/workspace.yml"],
-    "./.moon/cache/schemas/toolchains.json": [".moon/toolchains.yml"]
+    "./.moon/cache/schemas/toolchains.json": [".moon/toolchains.yml"],
+    "https://json.schemastore.org/github-workflow.json": [
+      ".github/workflows/*.yml",
+      ".github/workflows/*.yaml"
+    ]
   }
 }
