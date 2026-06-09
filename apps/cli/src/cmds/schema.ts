@@ -3,14 +3,14 @@ import * as path from "node:path";
 import Type from "typebox";
 import type { TSchema } from "typebox";
 import { app } from "../app";
+import { formatCommandError } from "../common/console";
 import { getActiveRuntime } from "../runtime";
-  import {
+import {
   ManifestSchema,
   RuntimeRootMismatchError,
   UnknownSchemaNameError,
-  formatCommandError,
-  markdownView,
 } from "@zenobius/boxfiles-core";
+import { markdownView } from "../views/markdown";
 
 const SCHEMA_DRAFT_URL = "https://json-schema.org/draft/2020-12/schema";
 const DEFAULT_SCHEMA_DIR = ".boxfiles/schemas";

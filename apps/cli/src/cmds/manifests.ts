@@ -1,14 +1,17 @@
 import * as path from "node:path";
 import { app } from "../app";
 import { getActiveRuntime } from "../runtime";
+import { formatCommandError } from "../common/console";
+import { markdownView } from "../views/markdown";
 import {
-  Manifest,
+  Manifest as ManifestFile,
   RuntimeRootMismatchError,
-  formatCommandError,
-  manifestIdFromPath,
-  markdownView,
+  buildManifestPlanTree,
   type ExecutionPlanDto,
+  type ManifestContextDto,
 } from "@zenobius/boxfiles-core";
+
+type Manifest = ManifestContextDto;
 
 export const manifestCmd = app
   .sub("manifests")
@@ -27,7 +30,8 @@ export const manifestCmd = app
   .command("validate", (cmd) =>
     cmd
       .meta({
-        description: "Validate discovered manifests and show all validation errors.",
+        description:
+          "Validate discovered manifests and show all validation errors.",
       })
       .run(async (input) => {
         try {
@@ -51,17 +55,11 @@ export const manifestCmd = app
 async function listManifestFiles(rootDir: string): Promise<void> {
   const runtime = getActiveRuntime();
   assertRuntimeRoot(rootDir);
-  const manifestPaths = await runtime.manifestService.discover();
-
-  const rows = manifestPaths.map((manifestPath) => {
-    const relativePath = path.relative(rootDir, manifestPath);
-    const id = manifestIdFromPath(rootDir, manifestPath);
-
-    return {
-      id,
-      path: relativePath,
-    };
-  });
+  const rows = (await runtime.manifestService.discoverContexts()).map(
+    (manifest) => ({
+      manifest,
+    }),
+  );
 
   if (rows.length === 0) {
     console.log("No manifests found.");
@@ -71,8 +69,12 @@ async function listManifestFiles(rootDir: string): Promise<void> {
   console.log(
     markdownView(
       [
-        "## Discovered Manifests\n",
-        ...rows.map((row) => `- [${row.id}](${row.path})`),
+        "## Discovered Manifests",
+        "",
+        renderManifestList(
+          rows,
+          (row) => `[${row.manifest.id}](${row.manifest.path})`,
+        ),
       ].join("\n"),
     ),
   );
@@ -91,7 +93,7 @@ async function validateManifestFiles(rootDir: string): Promise<void> {
   const issues = await Promise.all(
     manifestPaths.map(async (manifestPath) => {
       try {
-        const manifest = await Manifest.load(rootDir, manifestPath);
+        const manifest = await ManifestFile.load(rootDir, manifestPath);
         manifest.parse();
         return null;
       } catch (error) {
@@ -113,7 +115,9 @@ async function validateManifestFiles(rootDir: string): Promise<void> {
   }
 
   process.exitCode = 1;
-  console.error(markdownView(renderManifestValidationReport(rootDir, validationIssues)));
+  console.error(
+    markdownView(renderManifestValidationReport(rootDir, validationIssues)),
+  );
 }
 
 async function listManifestPlan(rootDir: string): Promise<void> {
@@ -169,40 +173,49 @@ function indentBlock(text: string, prefix: string): string {
     .join("\n");
 }
 
-function renderManifestPlan(plan: ExecutionPlanDto): string {
-  const header = "## Manifest Plan\n";
+export function renderManifestPlan(plan: ExecutionPlanDto): string {
+  const header = "## Manifest Plan";
+  const tree = buildManifestPlanTree(plan.manifests);
+  const list = renderManifestTree(tree, (item) => {
+    const stepCount = item.steps.length;
+    const childCount = item.children.length;
+    const childSuffix = childCount > 0 ? ` 👥 ${childCount}` : "";
 
-  const list = plan.manifests.flatMap((manifest, index) => [
-    `### ${index + 1}. ${manifest.id}`,
-    `- path: \`${manifest.path}\``,
-    `- files: \`${manifest.manifest.filesDir}\``,
-    ...renderList("- dependencies", manifest.dependsOn, (dep) => dep),
-    `- steps: ${manifest.steps.length}`,
-    "",
-  ]);
+    return `${item.manifest.id} (${item.manifest.path}) 👣 ${stepCount}${childSuffix}`;
+  });
 
-  return [header, ...list].join("\n");
+  return [header, "", list].join("\n");
 }
 
-function renderList<T>(
-  label: string,
-  items: T[],
+export function renderManifestList<T extends { readonly manifest: Manifest }>(
+  items: readonly T[],
   render: (item: T) => string,
-): string[] {
-  if (items.length === 0) return [`- ${label}: 0`];
+): string {
+  if (items.length === 0) return "";
 
-  const output = [
-    `${label}: ${items.length}`,
-    ...items.map((item) => `  - ${render(item)}`),
-  ];
-
-  return output;
+  return items.map((item) => `- ${render(item)}`).join("\n");
 }
 
-function stringifyConfig(config: unknown): string {
-  const serialized = JSON.stringify(config);
-  if (serialized === undefined) return "{}";
-  return serialized;
+function renderManifestTree<T extends { readonly children: readonly T[] }>(
+  items: readonly T[],
+  render: (item: T) => string,
+  depth = 0,
+): string {
+  if (items.length === 0) return "";
+
+  const lines: string[] = [];
+  const prefix = "  ".repeat(depth);
+
+  for (const item of items) {
+    lines.push(`${prefix}- ${render(item)}`);
+
+    const children = renderManifestTree(item.children, render, depth + 1);
+    if (children.length === 0) continue;
+
+    lines.push(children);
+  }
+
+  return lines.join("\n");
 }
 
 type ManifestValidationIssue = {
