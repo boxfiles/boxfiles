@@ -1,5 +1,6 @@
 export * from "./base";
 export * from "./compile";
+export * from "./config";
 export * from "./context";
 export * from "./discovery";
 export * from "./manifest-base";

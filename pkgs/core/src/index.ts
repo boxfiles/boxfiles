@@ -1,4 +1,5 @@
 export * from "./common/schema";
+export * from "./services/Config";
 export * from "./exceptions";
 export * from "./services/Context";
 export * from "./services/Manifest";

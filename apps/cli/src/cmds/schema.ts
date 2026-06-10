@@ -1,11 +1,11 @@
 import * as fs from "node:fs/promises";
 import * as path from "node:path";
-import Type from "typebox";
 import type { TSchema } from "typebox";
 import { app } from "../app";
 import { formatCommandError } from "../common/console";
 import { getActiveRuntime } from "../runtime";
 import {
+  BoxfilesRcFileSchema,
   ManifestSchema,
   RuntimeRootMismatchError,
   UnknownSchemaNameError,
@@ -15,70 +15,6 @@ import { markdownView } from "../views/markdown";
 const SCHEMA_DRAFT_URL = "https://json-schema.org/draft/2020-12/schema";
 const DEFAULT_SCHEMA_DIR = ".boxfiles/schemas";
 
-const PluginReferenceSchema = Type.Union([
-  Type.String({
-    pattern: "^npm:[^\\s]+$",
-    description: "NPM plugin specifier, for example npm:@someone/pkg@1.2.3.",
-  }),
-  Type.String({
-    pattern: "^github:[^\\s]+$",
-    description: "GitHub plugin specifier, for example github:someone/reponame/path/extension.ts#tag-or-commitish.",
-  }),
-  Type.String({
-    pattern: "^(\\.{1,2}/|/)[^\\s]+$",
-    description: "Local plugin path, for example ./some-folder/something.ts.",
-  }),
-]);
-
-const FactCollisionPolicySchema = Type.Union([
-  Type.Literal("error"),
-  Type.Literal("override"),
-  Type.Literal("keep-first"),
-]);
-
-const BoxfilesRcSchema = Type.Object(
-  {
-    plugins: Type.Readonly(Type.Optional(Type.Array(PluginReferenceSchema, {
-      description: "Explicit plugin modules to load before fact gathering and manifest planning.",
-    }))),
-    settings: Type.Readonly(Type.Optional(Type.Object(
-      {
-        facts: Type.Readonly(Type.Optional(Type.Object(
-          {
-            collision: Type.Readonly(Type.Optional(FactCollisionPolicySchema)),
-          },
-          {
-            additionalProperties: false,
-            description: "Default collision policy for facts loaded from this config file.",
-          },
-        ))),
-        plugins: Type.Readonly(Type.Optional(Type.Object(
-          {
-            allowRemote: Type.Readonly(Type.Optional(Type.Boolean({
-              description: "Whether npm: and github: plugin references may be loaded from this config.",
-            }))),
-          },
-          {
-            additionalProperties: false,
-            description: "Plugin-loading policy hints for this config file.",
-          },
-        ))),
-      },
-      {
-        additionalProperties: false,
-        description: "Config-level settings that affect config-derived facts and plugin loading.",
-      },
-    ))),
-    facts: Type.Readonly(Type.Optional(Type.Record(Type.String({ minLength: 1 }), Type.Unknown(), {
-      description: "Static facts contributed by this config file.",
-    }))),
-  },
-  {
-    title: "Boxfiles rc config",
-    description: "Project or user config for plugins, settings, and static facts loaded from .boxfilesrc files.",
-    additionalProperties: false,
-  },
-);
 
 export const schemaCmd = app
   .sub("schema")
@@ -141,8 +77,8 @@ const SCHEMA_FILES: readonly SchemaFile[] = [
     fileName: "boxfilesrc.schema.json",
     id: "https://boxfiles.dev/schemas/boxfilesrc.schema.json",
     title: "Boxfiles rc config",
-    description: "A Boxfiles rc config file that contributes project or user facts.",
-    schema: BoxfilesRcSchema,
+    description: "A Boxfiles rc config file that declares plugins and contributes project or user facts.",
+    schema: BoxfilesRcFileSchema,
   },
 ];
 
