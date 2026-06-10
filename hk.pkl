@@ -17,6 +17,11 @@ local linters = new Mapping<String, Step> {
         glob = "*.pkl"
         check = "pkl eval {{files}} >/dev/null"
     }
+
+    // scan source tree for committed secrets
+    ["trufflehog"] {
+        check = "proto run trufflehog -- filesystem . --no-update --fail --fail-on-scan-errors --filter-unverified --force-skip-binaries --force-skip-archives --exclude-paths .trufflehog-exclude"
+    }
 }
 
 hooks {
