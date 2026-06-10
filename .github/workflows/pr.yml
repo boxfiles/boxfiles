@@ -32,6 +32,17 @@ jobs:
           auto-install: true
           auto-setup: true
 
+      - name: Scan PR commits for secrets
+        if: github.event_name == 'pull_request'
+        run: |
+          proto run trufflehog -- git file://. \
+            --since-commit "${{ github.event.pull_request.base.sha }}" \
+            --branch HEAD \
+            --results=verified,unknown \
+            --fail \
+            --no-update \
+            --github-actions
+
       - name: Restore Moon cache
         uses: ./.github/actions/moon-cache
         with:
@@ -45,7 +56,7 @@ jobs:
           cache-version: v1
 
       - name: Sync Moon Projects to release-please
-        uses: .github/actions/sync-moon-to-release-please
+        uses: ./.github/actions/sync-moon-to-release-please
 
       # Monorepo quality gate for pull requests.
       - name: Run Checks
