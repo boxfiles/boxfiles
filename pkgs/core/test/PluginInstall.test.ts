@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { installPluginDeclaration, type GitPluginSource, type NpmPluginSource, type PluginInstallFileSystem } from "../src/index";
+import { getPluginCacheEntry, installPluginDeclaration, parsePluginSource, type GitPluginSource, type NpmPluginSource, type PluginInstallFileSystem } from "../src/index";
 
 describe("installPluginDeclaration", () => {
   test("validates config and fetches npm source before writing string shorthand to .boxfilesrc", async () => {
@@ -153,6 +153,25 @@ describe("installPluginDeclaration", () => {
     expect(events).toEqual(["read"]);
     expect(fs.written).toBeNull();
   });
+
+  test("reports cache path and repair instruction when config update fails after cache population", async () => {
+    const events: string[] = [];
+    const fs = createFailingWriteConfigFs(events);
+    const source = "npm:plugin-demo@1.0.0";
+    const cache = { env: { XDG_CACHE_HOME: "/workspace/custom-cache" } };
+    const cacheEntry = getPluginCacheEntry(parsePluginSource(source), cache);
+    if (cacheEntry === null) throw new Error("Expected cache entry");
+
+    await expect(installPluginDeclaration("demo", source, {
+      rootDir: "/workspace/project",
+      fs,
+      cache,
+      installNpm: async () => { events.push("install:npm"); },
+    })).rejects.toThrow(new RegExp(`Failed to update \\.boxfilesrc.*${escapeRegExp(cacheEntry.path)}.*Repair by removing that cache directory`, "u"));
+
+    expect(events).toEqual(["read", "install:npm", "mkdir", "write"]);
+    expect(fs.written).toBeNull();
+  });
 });
 
 type TestPluginInstallFileSystem = PluginInstallFileSystem & {
@@ -173,6 +192,25 @@ function createConfigFs(events: string[], initial: string | null = null): TestPl
     async writeFile(_path, data) {
       events.push("write");
       written = data;
+    },
+    async mkdir(_path, _options) {
+      events.push("mkdir");
+    },
+  };
+}
+
+function createFailingWriteConfigFs(events: string[]): TestPluginInstallFileSystem {
+  return {
+    get written() {
+      return null;
+    },
+    async readFile(_path, _encoding) {
+      events.push("read");
+      throw enoentError();
+    },
+    async writeFile(_path, _data) {
+      events.push("write");
+      throw new Error("disk full");
     },
     async mkdir(_path, _options) {
       events.push("mkdir");
@@ -208,4 +246,8 @@ function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
 function isStringMap(value: unknown): value is Readonly<Record<string, string>> {
   if (!isRecord(value)) return false;
   return Object.values(value).every((entry) => typeof entry === "string");
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
 }

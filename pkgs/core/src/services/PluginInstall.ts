@@ -4,6 +4,7 @@ import { BoxfilesRcConfigDTO } from "./Config";
 import { resolveFilePluginSource } from "./FilePluginResolver";
 import { installGitPluginSource } from "./GitPluginInstaller";
 import { installNpmPluginSource } from "./NpmPluginInstaller";
+import { getPluginCacheEntry, type PluginCacheRootOptions } from "./PluginCache";
 import { parsePluginSource, type FilePluginSource, type GitPluginSource, type NpmPluginSource, type ParsedPluginSource } from "./PluginSources";
 
 export type PluginInstallFileSystem = {
@@ -16,6 +17,7 @@ export type PluginInstallDependencies = {
   readonly installNpm?: (source: NpmPluginSource) => Promise<unknown>;
   readonly installGit?: (source: GitPluginSource) => Promise<unknown>;
   readonly resolveFile?: (source: FilePluginSource, options: { readonly configPath: string }) => Promise<unknown>;
+  readonly cache?: PluginCacheRootOptions;
 };
 
 export type PluginInstallOptions = PluginInstallDependencies & {
@@ -55,7 +57,7 @@ export async function installPluginDeclaration(
   const config = await readExistingConfig(configPath, fs);
 
   await validateAndPopulateCache(source, configPath, options);
-  await upsertPluginDeclaration(configPath, id, sourceText, config, fs);
+  await writePluginDeclarationWithDiagnostics(configPath, id, sourceText, source, config, fs, options.cache);
 
   return { id, source: sourceText, kind: source.kind, configPath };
 }
@@ -66,12 +68,20 @@ async function validateAndPopulateCache(
   dependencies: PluginInstallDependencies,
 ): Promise<void> {
   if (source.kind === "npm") {
-    await (dependencies.installNpm ?? installNpmPluginSource)(source);
+    if (dependencies.installNpm !== undefined) {
+      await dependencies.installNpm(source);
+      return;
+    }
+    await installNpmPluginSource(source, dependencies.cache);
     return;
   }
 
   if (source.kind === "git") {
-    await (dependencies.installGit ?? installGitPluginSource)(source);
+    if (dependencies.installGit !== undefined) {
+      await dependencies.installGit(source);
+      return;
+    }
+    await installGitPluginSource(source, dependencies.cache);
     return;
   }
 
@@ -83,6 +93,26 @@ async function defaultResolveFile(
   options: { readonly configPath: string },
 ): Promise<unknown> {
   return await resolveFilePluginSource(source, options);
+}
+
+async function writePluginDeclarationWithDiagnostics(
+  configPath: string,
+  id: string,
+  sourceText: string,
+  source: ParsedPluginSource,
+  config: Readonly<Record<string, unknown>>,
+  fs: PluginInstallFileSystem,
+  cacheOptions: PluginCacheRootOptions | undefined,
+): Promise<void> {
+  try {
+    await upsertPluginDeclaration(configPath, id, sourceText, config, fs);
+  } catch (error) {
+    const cacheEntry = getPluginCacheEntry(source, cacheOptions);
+    if (cacheEntry === null) throw error;
+    throw new PluginInstallError(
+      `Failed to update .boxfilesrc after populating plugin cache at ${cacheEntry.path}. Repair by removing that cache directory or rerunning boxfiles plugin install. Cause: ${formatUnknownError(error)}`,
+    );
+  }
 }
 
 async function upsertPluginDeclaration(
@@ -158,7 +188,7 @@ function hasErrorCode(value: unknown, code: string): boolean {
   return typeof value === "object"
     && value !== null
     && "code" in value
-    && value.code === code;
+    && value["code"] === code;
 }
 
 function formatUnknownError(error: unknown): string {
