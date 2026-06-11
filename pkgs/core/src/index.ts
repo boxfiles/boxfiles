@@ -12,3 +12,4 @@ export * from "./services/GitPluginInstaller";
 export * from "./services/FilePluginResolver";
 export * from "./services/PluginInstall";
 export * from "./services/PluginRemove";
+export * from "./services/PluginLoader";

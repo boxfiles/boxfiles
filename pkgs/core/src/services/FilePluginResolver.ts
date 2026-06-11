@@ -92,7 +92,7 @@ async function assertPluginDirectoryExists(
   }
 }
 
-async function resolvePluginEntryPath(
+export async function resolvePluginEntryPath(
   fs: FilePluginResolverFileSystem,
   pluginPath: string,
 ): Promise<string> {

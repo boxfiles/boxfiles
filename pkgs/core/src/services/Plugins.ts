@@ -91,7 +91,7 @@ export type PluginModule = {
     readonly default?: unknown;
 };
 
-export type PluginSource = "builtin" | "user" | "npm";
+export type PluginSource = "builtin" | "user" | "npm" | "git" | "file";
 export type PluginSummaryDto = {
     readonly id: string;
     readonly source: PluginSource;

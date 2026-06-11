@@ -2,6 +2,7 @@ import type { CrustPlugin } from "@crustjs/core";
 import {
   ManifestService,
   PluginService,
+  loadInstalledPlugins,
   RuntimeNotActiveError,
 } from "@boxfiles/core";
 import { builtInPlugins } from "./providers";
@@ -29,6 +30,24 @@ export function createCliRuntime(rootDir: string): CliRuntime {
   };
 }
 
+export async function createConfiguredCliRuntime(rootDir: string): Promise<CliRuntime> {
+  return await createRuntimeForRoute(rootDir);
+}
+
+async function createRuntimeForRoute(
+  rootDir: string,
+  commandPath?: readonly string[],
+): Promise<CliRuntime> {
+  const runtime = createCliRuntime(rootDir);
+  if (!shouldLoadInstalledPlugins(commandPath)) return runtime;
+
+  await loadInstalledPlugins({
+    rootDir,
+    pluginService: runtime.pluginService,
+  });
+  return runtime;
+}
+
 export function setActiveRuntime(runtime: CliRuntime): void {
   activeRuntime = runtime;
 }
@@ -53,7 +72,7 @@ export function boxfilesRuntimePlugin(): CrustPlugin {
       }
 
       const previousRuntime = activeRuntime;
-      const runtime = createCliRuntime(rootDir);
+      const runtime = await createRuntimeForRoute(rootDir, context.route?.commandPath);
       context.state.set(RUNTIME_STATE_KEY, runtime);
       setActiveRuntime(runtime);
 
@@ -79,6 +98,17 @@ function readRootDir(flags: unknown): string | null {
   if (dir.trim().length === 0) return null;
 
   return dir;
+}
+
+
+function shouldLoadInstalledPlugins(commandPath: readonly string[] | undefined): boolean {
+  if (commandPath === undefined) return true;
+
+  const pluginCommandIndex = commandPath.findIndex((segment) => segment === "plugin");
+  if (pluginCommandIndex === -1) return true;
+
+  const subcommand = commandPath[pluginCommandIndex + 1];
+  return subcommand !== "install" && subcommand !== "remove";
 }
 
 function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
