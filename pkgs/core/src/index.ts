@@ -6,3 +6,4 @@ export * from "./services/Manifest";
 export * from "./services/Plan";
 export * from "./services/Plugins";
 export * from "./services/PluginSources";
+export * from "./services/PluginCache";
