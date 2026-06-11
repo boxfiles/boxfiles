@@ -11,3 +11,4 @@ export * from "./services/NpmPluginInstaller";
 export * from "./services/GitPluginInstaller";
 export * from "./services/FilePluginResolver";
 export * from "./services/PluginInstall";
+export * from "./services/PluginRemove";
