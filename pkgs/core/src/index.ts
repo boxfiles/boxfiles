@@ -10,3 +10,4 @@ export * from "./services/PluginCache";
 export * from "./services/NpmPluginInstaller";
 export * from "./services/GitPluginInstaller";
 export * from "./services/FilePluginResolver";
+export * from "./services/PluginInstall";
