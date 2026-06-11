@@ -1,4 +1,4 @@
-import { installPluginDeclaration, removePluginDeclaration, type PluginRemoveResult } from "@boxfiles/core";
+import { formatPluginReproducibilityWarnings, installPluginDeclaration, removePluginDeclaration, type PluginRemoveResult, type PluginReproducibilityWarning } from "@boxfiles/core";
 import { app } from "../app";
 import { formatCommandError } from "../common/console";
 import { markdownView } from "../views/markdown";
@@ -22,7 +22,7 @@ export const pluginCmd = app
           const id = readStringArg(input.args, "id");
           const source = readStringArg(input.args, "source");
           const result = await installPluginDeclaration(id, source, { rootDir: input.flags.dir });
-          console.log(markdownView(`Installed plugin \`${result.id}\` from \`${result.source}\` into .boxfilesrc.`));
+          console.log(markdownView(formatInstallSuccess(result.id, result.source, result.warning)));
         } catch (error) {
           process.exitCode = 1;
           console.error(markdownView(formatCommandError(error)));
@@ -68,6 +68,13 @@ function readBooleanFlag(flags: unknown, name: string): boolean {
   return flags[name] === true;
 }
 
+function formatInstallSuccess(id: string, source: string, warning: PluginReproducibilityWarning): string {
+  return [
+    `Installed plugin \`${id}\` from \`${source}\` into .boxfilesrc.`,
+    "",
+    formatPluginReproducibilityWarnings([warning]),
+  ].join("\n");
+}
 function formatRemoveSuccess(result: PluginRemoveResult): string {
   if (result.purged) return `Removed plugin \`${result.id}\` from .boxfilesrc and purged cache \`${result.cacheEntry?.path ?? ""}\`.`;
   if (result.purgeSkippedReason === "not-cacheable") return `Removed plugin \`${result.id}\` from .boxfilesrc; no cache entry exists for file sources.`;

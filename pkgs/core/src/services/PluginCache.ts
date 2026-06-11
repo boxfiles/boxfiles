@@ -1,3 +1,12 @@
+// PluginCache.ts
+//
+// Defines deterministic cache locations for remote plugin artifacts. npm and
+// git sources are cacheable because install fetches bytes into Boxfiles-owned
+// storage. file sources return no cache entry because they remain live local
+// paths by design.
+//
+// Cache names combine a readable label with a hash of the canonical source spec
+// so version/ref differences do not collide while paths stay filesystem-safe.
 import { createHash } from "node:crypto";
 import { homedir as defaultHomedir } from "node:os";
 import { basename, join } from "node:path";
@@ -29,7 +38,12 @@ export function resolvePluginCacheRoot(options: PluginCacheRootOptions = {}): st
   return join(baseCacheDirectory, ...pluginCachePathSegments);
 }
 
-export function getPluginCacheEntry(
+/**
+ * Returns the cache entry a future loader should read for an installed remote
+ * plugin. `null` for file sources is part of the contract: callers must not
+ * create a cached copy of local machine state.
+ */
+ export function getPluginCacheEntry(
   source: ParsedPluginSource,
   options: PluginCacheRootOptions = {},
 ): PluginCacheEntry | null {
@@ -48,6 +62,8 @@ export function getPluginCacheEntry(
   };
 }
 
+// Canonical specs are the cache identity. If lockfiles later pin resolved
+// versions/commits, this function is the fence where identity semantics change.
 function canonicalPluginSourceSpec(source: CacheablePluginSource): string {
   switch (source.kind) {
     case "npm":

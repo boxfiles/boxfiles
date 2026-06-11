@@ -1,3 +1,11 @@
+// NpmPluginInstaller.ts
+//
+// Fetches npm plugin sources into Boxfiles' plugin cache without touching the
+// target project. `npm pack` runs in a private temp directory, scripts are
+// disabled, and only the packed tarball content is committed to cache.
+//
+// This isolation is deliberate: plugin installation must not create
+// `node_modules`, lockfiles, or package metadata beside the user's manifests.
 import { mkdir, readdir, rename, rm, cp, mkdtemp } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
 import type { PluginCacheEntry, PluginCacheRootOptions } from "./PluginCache";
@@ -54,6 +62,10 @@ export async function installNpmPluginSource(
   if (cacheEntry === null) throw new NpmPluginFetchError("npm plugin source did not produce a cache entry");
 
   const cacheRoot = resolvePluginCacheRoot(options);
+
+  // Use a temp directory under the cache root so failed `npm pack` or tar
+  // extraction cannot leave a half-written cache entry that the loader might
+  // later mistake for an installed plugin.
   const tempRoot = options.tempRoot ?? join(cacheRoot, ".tmp");
   await fs.mkdir(tempRoot, { recursive: true });
   const tempDirectory = await fs.mkdtemp(join(tempRoot, `${cacheEntry.directoryName}-`));
@@ -65,6 +77,8 @@ export async function installNpmPluginSource(
     await fs.mkdir(unpackDirectory, { recursive: true });
 
     const specifier = npmSpecifier(source);
+    // `npm pack --ignore-scripts` gives us the published package payload while
+    // avoiding dependency install and lifecycle script execution in the project.
     const packResult = await runner("npm", [
       "pack",
       specifier,
@@ -87,6 +101,8 @@ export async function installNpmPluginSource(
     assertSuccessfulCommand("tar extract", extractResult);
 
     await fs.mkdir(dirname(cacheEntry.path), { recursive: true });
+    // Commit only after extraction succeeds. Until this point `cacheEntry.path`
+    // must remain absent or contain the previous good artifact.
     await commitDirectory(fs, unpackDirectory, cacheEntry.path);
     return cacheEntry;
   } catch (error) {
@@ -156,6 +172,8 @@ function isSafePackedTarballName(filename: string): boolean {
 }
 
 async function commitDirectory(fs: NpmPluginInstallerFileSystem, from: string, to: string): Promise<void> {
+// `rename` is atomic on one filesystem. EXDEV happens when tests or custom
+// cache roots cross mount boundaries, so fall back to copy+remove only then.
   await fs.rm(to, { recursive: true, force: true });
   try {
     await fs.rename(from, to);

@@ -1,7 +1,7 @@
 import { app } from "../app";
 import { formatCommandError } from "../common/console";
 import { getActiveRuntime } from "../runtime";
-import { RuntimeRootMismatchError } from "@boxfiles/core";
+import { RuntimeRootMismatchError, formatPluginReproducibilityWarnings, readPluginReproducibilityWarnings } from "@boxfiles/core";
 import { markdownView } from "../views/markdown";
 
 export const pluginsCmd = app
@@ -14,34 +14,36 @@ export const pluginsCmd = app
       .meta({
         description: "List registered plugins and action providers.",
       })
-      .run((input) => {
-        runPluginsCommand(() => {
-          listPlugins(input.flags.dir);
+      .run(async (input) => {
+        await runPluginsCommand(async () => {
+          await listPlugins(input.flags.dir);
         });
       }),
   )
-  .run((input) => {
-    runPluginsCommand(() => {
-      listPlugins(input.flags.dir);
+  .run(async (input) => {
+    await runPluginsCommand(async () => {
+      await listPlugins(input.flags.dir);
     });
   });
 
-function runPluginsCommand(command: () => void): void {
+async function runPluginsCommand(command: () => Promise<void>): Promise<void> {
   try {
-    command();
+    await command();
   } catch (error) {
     process.exitCode = 1;
     console.error(formatCommandError(error));
   }
 }
 
-function listPlugins(rootDir: string): void {
+async function listPlugins(rootDir: string): Promise<void> {
   const runtime = getActiveRuntime();
   if (runtime.pluginService.rootDir !== rootDir) {
     throw new RuntimeRootMismatchError(rootDir, runtime.pluginService.rootDir);
   }
 
   const plugins = runtime.pluginService.listPlugins();
+  const warnings = await readPluginReproducibilityWarnings({ rootDir });
+  const warningSection = formatPluginReproducibilityWarnings(warnings);
   if (plugins.length === 0) {
     console.log("No plugins registered.");
     return;
@@ -60,15 +62,17 @@ function listPlugins(rootDir: string): void {
     return `| \`${plugin.id}\` | ${plugin.source} | ${context} | ${actions} |`;
   });
 
-  console.log(
-    markdownView(
-      [
-        "## Plugins",
-        "",
-        "| Plugin | Source | Context facts | Action providers |",
-        "|---|---|---|---|",
-        ...rows,
-      ].join("\n"),
-    ),
-  );
+  const sections = [
+    [
+      "## Plugins",
+      "",
+      "| Plugin | Source | Context facts | Action providers |",
+      "|---|---|---|---|",
+      ...rows,
+    ].join("\n"),
+  ];
+
+  if (warningSection.length > 0) sections.push(warningSection);
+
+  console.log(markdownView(sections.join("\n\n")));
 }

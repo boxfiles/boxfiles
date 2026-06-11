@@ -42,6 +42,8 @@ describe("plugin CLI workflow", () => {
 
     expect(output.exitCode).toBe(0);
     expect(output.stdout).toContain("Installed plugin");
+    expect(output.stdout).toContain("Plugin Reproducibility Warnings");
+    expect(output.stdout).toContain("local machine state");
     expect(await readConfig(root)).toEqual({ plugins: { local: "file:./plugins/local" } });
     await expect(stat(join(xdgCacheHome, "boxfiles", "plugins"))).rejects.toThrow();
   });

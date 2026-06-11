@@ -19,10 +19,16 @@ Plugins are capability modules. They may expose:
 - context facts gathered before planning
 - action providers used during planning and apply
 
+See [Plugin installer](./plugin-installer.md) for `.boxfilesrc` declarations, `plugin install`, cache behavior, removal, purge, and reproducibility warnings.
+
 ## Plugin lifecycle
 
 ```text
-module import
+.boxfilesrc declaration
+  -> plugin install validates source
+  -> npm/git sources fetch into XDG cache
+  -> file sources stay as local paths
+  -> module import
   -> normalize plugin module
   -> validate plugin shape
   -> register plugin id

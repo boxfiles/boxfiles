@@ -1,3 +1,11 @@
+// FilePluginResolver.ts
+//
+// Resolves `file:` plugin sources against the manifest config location and
+// proves the local plugin has an entrypoint. It does not copy files into cache
+// because local plugin sources are live workstation state.
+//
+// This resolver exists so install/load share path and entry validation while
+// keeping file-source non-reproducibility explicit.
 import { constants } from "node:fs";
 import { access, readFile, stat } from "node:fs/promises";
 import { dirname, isAbsolute, join, relative, resolve } from "node:path";
@@ -38,7 +46,12 @@ const nodeFileSystem: FilePluginResolverFileSystem = {
 
 const fallbackEntryFiles = ["src/index.ts", "index.ts", "src/index.js", "index.js"] as const;
 
-export async function resolveFilePluginSource(
+/**
+ * Resolves a local plugin into the artifact shape consumed by installers and
+ * loaders. The returned artifact is marked `nonReproducible` because another
+ * workstation may not have the same path or bytes.
+ */
+ export async function resolveFilePluginSource(
   source: FilePluginSource,
   options: ResolveFilePluginSourceOptions,
 ): Promise<ResolvedFilePluginArtifact> {
@@ -92,7 +105,12 @@ async function assertPluginDirectoryExists(
   }
 }
 
-export async function resolvePluginEntryPath(
+/**
+ * Finds the plugin entrypoint using package metadata first, then legacy root
+ * fallbacks. Package entries must stay inside the plugin dir so a local plugin
+ * cannot escape into arbitrary workstation files.
+ */
+ export async function resolvePluginEntryPath(
   fs: FilePluginResolverFileSystem,
   pluginPath: string,
 ): Promise<string> {

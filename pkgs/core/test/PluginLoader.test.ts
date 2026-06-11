@@ -29,6 +29,78 @@ describe("loadInstalledPlugins", () => {
     })).rejects.toThrow(`Installed plugin cache entry is missing: ${cacheEntry.path}`);
   });
 
+  test("loads an npm plugin from its cached artifact without running context resolvers", async () => {
+    const root = await mkdtemp(join(tmpdir(), "boxfiles-loader-npm-"));
+    const cacheHome = await mkdtemp(join(tmpdir(), "boxfiles-loader-cache-"));
+    const markerPath = join(root, "npm-resolver-ran.txt");
+    const source = "npm:@boxfiles/plugin-remote@1.2.3";
+    const cacheEntry = getPluginCacheEntry(parsePluginSource(source), { env: { XDG_CACHE_HOME: cacheHome } });
+    if (cacheEntry === null) throw new Error("Expected cache entry for npm source");
+
+    await writeFile(join(root, ".boxfilesrc"), `${JSON.stringify({ plugins: { remote: source } })}\n`);
+    await writeCachedPlugin(cacheEntry.path, markerPath, "npm-plugin", "npm.fact", "npm.action");
+
+    const pluginService = new PluginService(root);
+    const loaded = await loadInstalledPlugins({
+      rootDir: root,
+      pluginService,
+      cache: { env: { XDG_CACHE_HOME: cacheHome } },
+    });
+
+    expect(loaded).toEqual([{ name: "remote", source, kind: "npm", entryPath: join(cacheEntry.path, "index.js") }]);
+    expect(pluginService.getActionProvider("npm.action")?.kind).toBe("npm.action");
+    expect(pluginService.listPlugins()).toContainEqual({
+      id: "npm-plugin",
+      source: "npm",
+      contextKeys: ["npm.fact"],
+      actionKinds: ["npm.action"],
+    });
+    expect(existsSync(markerPath)).toBe(false);
+
+    const contextService = ContextService.create();
+    const gathered = await pluginService.gatherContextFacts(contextService);
+
+    expect(gathered.map((fact) => fact.key)).toEqual([ContextService.factKey("npm.fact")]);
+    expect(contextService.snapshot()).toEqual({ "npm.fact": "resolved" });
+    expect(await readFile(markerPath, "utf8")).toBe("resolver executed");
+  });
+
+  test("loads a git plugin from its cached artifact without running context resolvers", async () => {
+    const root = await mkdtemp(join(tmpdir(), "boxfiles-loader-git-"));
+    const cacheHome = await mkdtemp(join(tmpdir(), "boxfiles-loader-cache-"));
+    const markerPath = join(root, "git-resolver-ran.txt");
+    const source = "git:https://example.com/acme/boxfiles-plugin.git#v1.2.3";
+    const cacheEntry = getPluginCacheEntry(parsePluginSource(source), { env: { XDG_CACHE_HOME: cacheHome } });
+    if (cacheEntry === null) throw new Error("Expected cache entry for git source");
+
+    await writeFile(join(root, ".boxfilesrc"), `${JSON.stringify({ plugins: { remote: source } })}\n`);
+    await writeCachedPlugin(cacheEntry.path, markerPath, "git-plugin", "git.fact", "git.action");
+
+    const pluginService = new PluginService(root);
+    const loaded = await loadInstalledPlugins({
+      rootDir: root,
+      pluginService,
+      cache: { env: { XDG_CACHE_HOME: cacheHome } },
+    });
+
+    expect(loaded).toEqual([{ name: "remote", source, kind: "git", entryPath: join(cacheEntry.path, "index.js") }]);
+    expect(pluginService.getActionProvider("git.action")?.kind).toBe("git.action");
+    expect(pluginService.listPlugins()).toContainEqual({
+      id: "git-plugin",
+      source: "git",
+      contextKeys: ["git.fact"],
+      actionKinds: ["git.action"],
+    });
+    expect(existsSync(markerPath)).toBe(false);
+
+    const contextService = ContextService.create();
+    const gathered = await pluginService.gatherContextFacts(contextService);
+
+    expect(gathered.map((fact) => fact.key)).toEqual([ContextService.factKey("git.fact")]);
+    expect(contextService.snapshot()).toEqual({ "git.fact": "resolved" });
+    expect(await readFile(markerPath, "utf8")).toBe("resolver executed");
+  });
+
   test("loads a local file plugin with action and context capabilities without running context resolvers", async () => {
     const root = await mkdtemp(join(tmpdir(), "boxfiles-loader-local-"));
     const pluginDir = join(root, "plugins", "local");
@@ -61,21 +133,33 @@ describe("loadInstalledPlugins", () => {
   });
 });
 
-function pluginModuleSource(markerPath: string): string {
+async function writeCachedPlugin(
+  pluginDir: string,
+  markerPath: string,
+  pluginId: string,
+  factKey: string,
+  actionKind: string,
+): Promise<void> {
+  await mkdir(pluginDir, { recursive: true });
+  await writeFile(join(pluginDir, "package.json"), `${JSON.stringify({ type: "module", exports: "./index.js" })}\n`);
+  await writeFile(join(pluginDir, "index.js"), pluginModuleSource(markerPath, pluginId, factKey, actionKind));
+}
+
+function pluginModuleSource(markerPath: string, pluginId = "local-plugin", factKey = "local.fact", actionKind = "local.action"): string {
   return `
 import { writeFileSync } from "node:fs";
 
 export default {
-  id: "local-plugin",
+  id: ${JSON.stringify(pluginId)},
   context: {
-    "local.fact": () => {
+    [${JSON.stringify(factKey)}]: () => {
       writeFileSync(${JSON.stringify(markerPath)}, "resolver executed");
       return "resolved";
     },
   },
   actions: {
     localAction: {
-      kind: "local.action",
+      kind: ${JSON.stringify(actionKind)},
       schema: {},
       validate(config) {
         return { success: true, value: config };

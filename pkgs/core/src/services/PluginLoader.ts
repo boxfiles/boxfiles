@@ -1,3 +1,12 @@
+// PluginLoader.ts
+//
+// Loads plugins already declared in `.boxfilesrc` and registers their modules
+// with PluginService. Remote plugin declarations resolve through the plugin
+// cache; file declarations resolve directly against the local path.
+//
+// Loader does no network or install work. Missing cache entries are reported as
+// load errors so users run install/repair instead of planning against live npm
+// or git state.
 import { access, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
@@ -41,7 +50,12 @@ const nodeFileSystem: PluginLoaderFileSystem = {
   access,
 };
 
-export async function loadInstalledPlugins(
+/**
+ * Registers every plugin declared in `.boxfilesrc` using artifacts already on
+ * disk. This is runtime integration, not installation: npm/git sources must be
+ * present in cache before this function runs.
+ */
+ export async function loadInstalledPlugins(
   options: LoadInstalledPluginsOptions,
 ): Promise<readonly LoadedPluginModuleDto[]> {
   const fs = options.fs ?? nodeFileSystem;
@@ -94,11 +108,16 @@ async function resolvePluginDeclarationEntryPath(
   cacheOptions: PluginCacheRootOptions | undefined,
 ): Promise<string> {
   if (source.kind === "file") {
+    // File plugins deliberately bypass cache. They are local extension points,
+    // so planning loads the current path and reproducibility warnings carry the
+    // portability risk.
     const artifact = await resolveFilePluginSource(source, { configPath, fs });
     return artifact.entryPath;
   }
 
   const cacheEntry = getPluginCacheEntry(source, cacheOptions);
+  // Remote plugins must resolve to cache entries populated by install. Do not
+  // fall back to network here; that would make planning non-reproducible.
   if (cacheEntry === null) {
     throw new PluginLoadError(`Plugin source ${source.kind} did not produce a cache entry.`);
   }

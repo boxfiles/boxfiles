@@ -1,3 +1,11 @@
+// GitPluginInstaller.ts
+//
+// Fetches git plugin sources into Boxfiles' plugin cache. Clone/checkout work
+// happens in a temp directory, source metadata is written into the cloned tree,
+// then the completed artifact replaces the cache entry.
+//
+// Project files are never mutated here. `.boxfilesrc` updates live in
+// PluginInstall so cache population can fail before declarations are recorded.
 import { randomUUID } from "node:crypto";
 import { cp, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
@@ -73,6 +81,9 @@ export async function installGitPluginSource(
   const tempDirectory = await fs.mkdtemp(join(tempRoot, `${cacheEntry.directoryName}-`));
 
   try {
+    // Keep all git operations inside the temp directory. The caller may be
+    // installing from a workstation repo, and plugin fetch must not observe or
+    // mutate that repo's working tree.
     const cloneDirectory = join(tempDirectory, "clone");
     const cloneResult = await runner("git", cloneArgs(source, cloneDirectory), { cwd: tempDirectory, env: options.env });
     assertSuccessfulGitCommand("git clone", cloneResult);
@@ -85,6 +96,8 @@ export async function installGitPluginSource(
     assertSuccessfulGitCommand("git rev-parse HEAD", commitResult);
 
     const resolvedCommit = normalizeResolvedCommit(commitResult.stdout);
+    // Record both requested ref and resolved commit. Until lockfiles exist this
+    // is diagnostic metadata, not a reproducibility guarantee.
     const metadata = buildMetadata(source, resolvedCommit);
     await fs.writeFile(join(cloneDirectory, metadataFilename), `${JSON.stringify(metadata, null, 2)}\n`);
     await fs.mkdir(dirname(cacheEntry.path), { recursive: true });
@@ -160,6 +173,9 @@ function buildMetadata(source: GitPluginSource, resolvedCommit: string | undefin
 }
 
 async function commitDirectory(fs: GitPluginInstallerFileSystem, from: string, to: string): Promise<void> {
+// Replace the cache entry as a small transaction: move old state aside, place
+// new state, restore old state if placement fails. This prevents loaders from
+// seeing a missing or partially copied plugin after a failed refresh.
   const backup = `${to}.previous-${randomUUID()}`;
   const hadExistingEntry = await moveExistingEntryAside(fs, to, backup);
 
@@ -185,6 +201,9 @@ async function moveExistingEntryAside(fs: GitPluginInstallerFileSystem, from: st
 }
 
 async function moveDirectoryAcrossDevices(fs: GitPluginInstallerFileSystem, from: string, to: string): Promise<void> {
+// Cache roots may live on another filesystem from temp roots in tests or
+// custom XDG setups. EXDEV is the only expected reason to degrade from atomic
+// rename to copy+remove.
   try {
     await fs.rename(from, to);
   } catch (error) {

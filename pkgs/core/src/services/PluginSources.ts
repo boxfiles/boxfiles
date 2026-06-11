@@ -1,5 +1,13 @@
-export type PluginSourceKind = "npm" | "git" | "file";
+// PluginSources.ts
+//
+// Parses user-facing plugin source strings into the small union consumed by
+// install, cache, loader, and warning code. This module intentionally validates
+// syntax only; it does not touch npm, git, or the filesystem.
+//
+// Keeping parsing side-effect free lets planning commands report bad plugin
+// declarations without accidentally fetching remote state.
 
+export type PluginSourceKind = "npm" | "git" | "file";
 export type NpmPluginSource = {
   readonly kind: "npm";
   readonly packageName: string;
@@ -26,6 +34,11 @@ export class PluginSourceParseError extends Error {
   }
 }
 
+/**
+ * Converts `npm:`, `git:`, and `file:` source text into typed source data.
+ * Callers decide whether the source should be fetched, cached, loaded directly,
+ * or warned about; parsing never performs those actions.
+ */
 export function parsePluginSource(source: string): ParsedPluginSource {
   const separatorIndex = source.indexOf(":");
   if (separatorIndex <= 0) {
@@ -100,9 +113,11 @@ function parseFilePluginSource(source: string, spec: string): FilePluginSource {
   return { kind: "file", path: spec };
 }
 
+// Scoped npm names already contain `@scope/`; search for a version separator
+// only after the slash so `npm:@scope/name@version` splits at the correct `@`.
 function findNpmVersionSeparator(spec: string): number {
-  const searchFrom = spec.startsWith("@") ? spec.indexOf("/") : 0;
-  if (searchFrom === -1) return -1;
+  const scopeSlashIndex = spec.startsWith("@") ? spec.indexOf("/") : -1;
+  const searchFrom = scopeSlashIndex === -1 ? 0 : scopeSlashIndex + 1;
 
   return spec.indexOf("@", searchFrom);
 }
@@ -141,6 +156,8 @@ function isScpLikeGitUrl(url: string): boolean {
   return /^[A-Za-z0-9._~-]+@[A-Za-z0-9.-]+:[^\s:]+$/.test(url);
 }
 
+// Git refs are validated with a conservative subset of Git's refname rules.
+// That keeps obvious shell/path hazards out before the git CLI sees user text.
 function isValidGitRef(ref: string): boolean {
   if (ref.length === 0) return false;
   if (ref === "@") return false;

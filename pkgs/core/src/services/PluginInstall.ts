@@ -1,3 +1,13 @@
+// PluginInstall.ts
+//
+// Orchestrates the plugin install transaction. Remote sources are fetched into
+// the plugin cache before `.boxfilesrc` changes, so a recorded npm/git plugin
+// always points at an artifact the loader can consume later. File sources skip
+// caching and are only resolved enough to prove the local path is usable.
+//
+// If `.boxfilesrc` cannot be written after cache population, the error includes
+// the populated cache path because manual repair may be needed to remove stale
+// cache state.
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
 import { BoxfilesRcConfigDTO } from "./Config";
@@ -6,6 +16,7 @@ import { installGitPluginSource } from "./GitPluginInstaller";
 import { installNpmPluginSource } from "./NpmPluginInstaller";
 import { getPluginCacheEntry, type PluginCacheRootOptions } from "./PluginCache";
 import { parsePluginSource, type FilePluginSource, type GitPluginSource, type NpmPluginSource, type ParsedPluginSource } from "./PluginSources";
+import { pluginReproducibilityWarning, type PluginReproducibilityWarning } from "./PluginWarnings";
 
 export type PluginInstallFileSystem = {
   readonly readFile: (path: string, encoding: "utf8") => Promise<string>;
@@ -30,6 +41,7 @@ export type PluginInstallResult = {
   readonly source: string;
   readonly kind: ParsedPluginSource["kind"];
   readonly configPath: string;
+  readonly warning: PluginReproducibilityWarning;
 };
 
 export class PluginInstallError extends Error {
@@ -56,12 +68,22 @@ export async function installPluginDeclaration(
   const fs = options.fs ?? nodeFileSystem;
   const config = await readExistingConfig(configPath, fs);
 
+  // Mutation order matters: validate/fetch the artifact first, then record the
+  // declaration. Reversing this can leave `.boxfilesrc` pointing at a plugin
+  // cache entry that was never populated.
+
   await validateAndPopulateCache(source, configPath, options);
   await writePluginDeclarationWithDiagnostics(configPath, id, sourceText, source, config, fs, options.cache);
 
-  return { id, source: sourceText, kind: source.kind, configPath };
+  return { id, source: sourceText, kind: source.kind, configPath, warning: pluginReproducibilityWarning(id, sourceText) };
 }
 
+/**
+ * Populates cache state required by future planning/loading without mutating
+ * project files. npm/git sources materialize into cache; file sources only
+ * resolve against the config path because local plugin paths are intentionally
+ * never copied into cache.
+ */
 async function validateAndPopulateCache(
   source: ParsedPluginSource,
   configPath: string,
@@ -95,6 +117,11 @@ async function defaultResolveFile(
   return await resolveFilePluginSource(source, options);
 }
 
+/**
+ * Writes `.boxfilesrc` after cache population and turns late write failures
+ * into repairable diagnostics. At this point remote plugin bytes may already
+ * exist on disk, so the caller needs the cache path, not a generic JSON error.
+ */
 async function writePluginDeclarationWithDiagnostics(
   configPath: string,
   id: string,
