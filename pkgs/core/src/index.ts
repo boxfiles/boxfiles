@@ -7,3 +7,4 @@ export * from "./services/Plan";
 export * from "./services/Plugins";
 export * from "./services/PluginSources";
 export * from "./services/PluginCache";
+export * from "./services/NpmPluginInstaller";
