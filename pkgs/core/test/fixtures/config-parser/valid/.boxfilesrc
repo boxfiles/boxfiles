@@ -1,0 +1,18 @@
+{
+  "plugins": {
+    "copy": "npm:@boxfiles/provider-copy@1.0.0",
+    "workstation": "git:https://example.com/boxfiles/workstation.git#v1",
+    "local": "file:./plugins/local"
+  },
+  "settings": {
+    "facts": {
+      "collision": "keep-first"
+    },
+    "plugins": {
+      "allowRemote": true
+    }
+  },
+  "facts": {
+    "profile": "workstation"
+  }
+}

@@ -1,0 +1,5 @@
+{
+  "plugins": {
+    "copy": "https://example.com/boxfiles/provider-copy.git"
+  }
+}

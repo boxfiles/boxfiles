@@ -1,0 +1,5 @@
+{
+  "plugins": {
+    "": "npm:@boxfiles/provider-copy"
+  }
+}
