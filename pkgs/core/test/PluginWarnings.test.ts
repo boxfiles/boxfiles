@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { formatPluginReproducibilityWarnings, pluginReproducibilityWarning } from "../src/services/PluginWarnings";
+import { formatPluginReproducibilityWarnings, pluginReproducibilityWarning } from "../src/services/Plugin/warnings";
 
 describe("pluginReproducibilityWarning", () => {
   test("marks npm, git, and file sources as non-reproducible without blocking", () => {

@@ -23,7 +23,7 @@ import {
   type CompiledManifestDto,
   type ManifestId,
 } from "./Manifest";
-import type { PluginService } from "./Plugins";
+import type { PluginService } from "./Plugin";
 
 export const ActionSafetySchema = Type.Object({
   idempotent: Type.Readonly(Type.Boolean()),

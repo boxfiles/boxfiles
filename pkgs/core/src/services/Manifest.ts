@@ -10,7 +10,7 @@ import * as path from "node:path";
 import Type from "typebox";
 import Schema from "typebox/schema";
 import { BrandedStringSchema, NonBlankStringSchema } from "../common/schema";
-import type { PluginService } from "./Plugins";
+import type { PluginService } from "./Plugin";
 import type { ContextSnapshot } from "./Context";
 import type { ActionPlanDto, ExecutionPlanDto } from "./Plan";
 import {

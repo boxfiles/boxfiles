@@ -1,4 +1,4 @@
-// NpmPluginInstaller.ts
+// npm.ts
 //
 // Fetches npm plugin sources into Boxfiles' plugin cache without touching the
 // target project. `npm pack` runs in a private temp directory, scripts are
@@ -6,11 +6,16 @@
 //
 // This isolation is deliberate: plugin installation must not create
 // `node_modules`, lockfiles, or package metadata beside the user's manifests.
-import { mkdir, readdir, rename, rm, cp, mkdtemp } from "node:fs/promises";
+import { cp, mkdir, mkdtemp, readdir, rename, rm } from "node:fs/promises";
 import { basename, dirname, join } from "node:path";
-import type { PluginCacheEntry, PluginCacheRootOptions } from "./PluginCache";
-import { getPluginCacheEntry, resolvePluginCacheRoot } from "./PluginCache";
-import type { NpmPluginSource } from "./PluginSources";
+import type { PluginCacheEntry, PluginCacheRootOptions } from "../cache";
+import { getPluginCacheEntry } from "../cache";
+import {
+  commitPluginCacheArtifact,
+  createPluginCacheTransactionDirectory,
+  type PluginCacheTransactionFileSystem,
+} from "../cacheTransaction";
+import type { NpmPluginSource } from "../source";
 
 export type CommandRunOptions = {
   readonly cwd: string;
@@ -29,13 +34,8 @@ export type CommandRunner = (
   options: CommandRunOptions,
 ) => Promise<CommandResult>;
 
-export type NpmPluginInstallerFileSystem = {
-  readonly mkdir: (path: string, options?: { readonly recursive?: boolean }) => Promise<void>;
-  readonly mkdtemp: (prefix: string) => Promise<string>;
+export type NpmPluginInstallerFileSystem = PluginCacheTransactionFileSystem & {
   readonly readdir: (path: string) => Promise<readonly string[]>;
-  readonly rename: (from: string, to: string) => Promise<void>;
-  readonly rm: (path: string, options?: { readonly recursive?: boolean; readonly force?: boolean }) => Promise<void>;
-  readonly cp: (from: string, to: string, options?: { readonly recursive?: boolean }) => Promise<void>;
 };
 
 export type InstallNpmPluginSourceOptions = PluginCacheRootOptions & {
@@ -61,14 +61,7 @@ export async function installNpmPluginSource(
   const cacheEntry = getPluginCacheEntry(source, options);
   if (cacheEntry === null) throw new NpmPluginFetchError("npm plugin source did not produce a cache entry");
 
-  const cacheRoot = resolvePluginCacheRoot(options);
-
-  // Use a temp directory under the cache root so failed `npm pack` or tar
-  // extraction cannot leave a half-written cache entry that the loader might
-  // later mistake for an installed plugin.
-  const tempRoot = options.tempRoot ?? join(cacheRoot, ".tmp");
-  await fs.mkdir(tempRoot, { recursive: true });
-  const tempDirectory = await fs.mkdtemp(join(tempRoot, `${cacheEntry.directoryName}-`));
+  const tempDirectory = await createPluginCacheTransactionDirectory(fs, cacheEntry, options);
 
   try {
     const packDirectory = join(tempDirectory, "pack");
@@ -101,9 +94,7 @@ export async function installNpmPluginSource(
     assertSuccessfulCommand("tar extract", extractResult);
 
     await fs.mkdir(dirname(cacheEntry.path), { recursive: true });
-    // Commit only after extraction succeeds. Until this point `cacheEntry.path`
-    // must remain absent or contain the previous good artifact.
-    await commitDirectory(fs, unpackDirectory, cacheEntry.path);
+    await commitPluginCacheArtifact(fs, unpackDirectory, cacheEntry.path);
     return cacheEntry;
   } catch (error) {
     if (error instanceof NpmPluginFetchError) throw error;
@@ -169,26 +160,6 @@ function isSafePackedTarballName(filename: string): boolean {
   return filename.endsWith(".tgz")
     && basename(filename) === filename
     && !filename.includes("\\");
-}
-
-async function commitDirectory(fs: NpmPluginInstallerFileSystem, from: string, to: string): Promise<void> {
-// `rename` is atomic on one filesystem. EXDEV happens when tests or custom
-// cache roots cross mount boundaries, so fall back to copy+remove only then.
-  await fs.rm(to, { recursive: true, force: true });
-  try {
-    await fs.rename(from, to);
-  } catch (error) {
-    if (!hasErrorCode(error, "EXDEV")) throw error;
-    await fs.cp(from, to, { recursive: true });
-    await fs.rm(from, { recursive: true, force: true });
-  }
-}
-
-function hasErrorCode(value: unknown, code: string): boolean {
-  return typeof value === "object"
-    && value !== null
-    && "code" in value
-    && value.code === code;
 }
 
 function formatUnknownError(error: unknown): string {

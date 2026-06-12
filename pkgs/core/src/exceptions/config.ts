@@ -17,7 +17,7 @@ export class BoxfilesRcValidationError extends BoxfilesError {
 
 export class BoxfilesRcReadError extends BoxfilesError {
   readonly path: string;
-  readonly cause: unknown;
+  override readonly cause: unknown;
 
   constructor(path: string, cause: unknown) {
     super(`Unable to read .boxfilesrc at ${path}: ${formatUnknownError(cause)}`);
@@ -28,7 +28,7 @@ export class BoxfilesRcReadError extends BoxfilesError {
 
 export class BoxfilesRcParseError extends BoxfilesError {
   readonly path: string;
-  readonly cause: unknown;
+  override readonly cause: unknown;
 
   constructor(path: string, cause: unknown) {
     super(`Unable to parse .boxfilesrc at ${path} as JSON: ${formatUnknownError(cause)}`);

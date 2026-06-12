@@ -1,4 +1,4 @@
-// GitPluginInstaller.ts
+// git.ts
 //
 // Fetches git plugin sources into Boxfiles' plugin cache. Clone/checkout work
 // happens in a temp directory, source metadata is written into the cloned tree,
@@ -6,12 +6,16 @@
 //
 // Project files are never mutated here. `.boxfilesrc` updates live in
 // PluginInstall so cache population can fail before declarations are recorded.
-import { randomUUID } from "node:crypto";
 import { cp, mkdir, mkdtemp, rename, rm, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import type { PluginCacheEntry, PluginCacheRootOptions } from "./PluginCache";
-import { getPluginCacheEntry, resolvePluginCacheRoot } from "./PluginCache";
-import type { GitPluginSource } from "./PluginSources";
+import type { PluginCacheEntry, PluginCacheRootOptions } from "../cache";
+import { getPluginCacheEntry } from "../cache";
+import {
+  commitPluginCacheArtifact,
+  createPluginCacheTransactionDirectory,
+  type PluginCacheTransactionFileSystem,
+} from "../cacheTransaction";
+import type { GitPluginSource } from "../source";
 
 export type GitCommandRunOptions = {
   readonly cwd: string;
@@ -30,12 +34,7 @@ export type GitCommandRunner = (
   options: GitCommandRunOptions,
 ) => Promise<GitCommandResult>;
 
-export type GitPluginInstallerFileSystem = {
-  readonly mkdir: (path: string, options?: { readonly recursive?: boolean }) => Promise<void>;
-  readonly mkdtemp: (prefix: string) => Promise<string>;
-  readonly rename: (from: string, to: string) => Promise<void>;
-  readonly rm: (path: string, options?: { readonly recursive?: boolean; readonly force?: boolean }) => Promise<void>;
-  readonly cp: (from: string, to: string, options?: { readonly recursive?: boolean }) => Promise<void>;
+export type GitPluginInstallerFileSystem = PluginCacheTransactionFileSystem & {
   readonly writeFile: (path: string, data: string) => Promise<void>;
 };
 
@@ -75,10 +74,7 @@ export async function installGitPluginSource(
   const cacheEntry = getPluginCacheEntry(source, options);
   if (cacheEntry === null) throw new GitPluginFetchError("git plugin source did not produce a cache entry");
 
-  const cacheRoot = resolvePluginCacheRoot(options);
-  const tempRoot = options.tempRoot ?? join(cacheRoot, ".tmp");
-  await fs.mkdir(tempRoot, { recursive: true });
-  const tempDirectory = await fs.mkdtemp(join(tempRoot, `${cacheEntry.directoryName}-`));
+  const tempDirectory = await createPluginCacheTransactionDirectory(fs, cacheEntry, options);
 
   try {
     // Keep all git operations inside the temp directory. The caller may be
@@ -101,7 +97,7 @@ export async function installGitPluginSource(
     const metadata = buildMetadata(source, resolvedCommit);
     await fs.writeFile(join(cloneDirectory, metadataFilename), `${JSON.stringify(metadata, null, 2)}\n`);
     await fs.mkdir(dirname(cacheEntry.path), { recursive: true });
-    await commitDirectory(fs, cloneDirectory, cacheEntry.path);
+    await commitPluginCacheArtifact(fs, cloneDirectory, cacheEntry.path);
 
     return { cacheEntry, metadata };
   } catch (error) {
@@ -170,54 +166,6 @@ function buildMetadata(source: GitPluginSource, resolvedCommit: string | undefin
   return source.ref === undefined
     ? { requestedUrl: source.url, resolvedCommit }
     : { requestedUrl: source.url, requestedRef: source.ref, resolvedCommit };
-}
-
-async function commitDirectory(fs: GitPluginInstallerFileSystem, from: string, to: string): Promise<void> {
-// Replace the cache entry as a small transaction: move old state aside, place
-// new state, restore old state if placement fails. This prevents loaders from
-// seeing a missing or partially copied plugin after a failed refresh.
-  const backup = `${to}.previous-${randomUUID()}`;
-  const hadExistingEntry = await moveExistingEntryAside(fs, to, backup);
-
-  try {
-    await moveDirectoryAcrossDevices(fs, from, to);
-  } catch (error) {
-    await fs.rm(to, { recursive: true, force: true });
-    if (hadExistingEntry) await moveDirectoryAcrossDevices(fs, backup, to);
-    throw error;
-  }
-
-  if (hadExistingEntry) await fs.rm(backup, { recursive: true, force: true });
-}
-
-async function moveExistingEntryAside(fs: GitPluginInstallerFileSystem, from: string, backup: string): Promise<boolean> {
-  try {
-    await fs.rename(from, backup);
-    return true;
-  } catch (error) {
-    if (hasErrorCode(error, "ENOENT")) return false;
-    throw error;
-  }
-}
-
-async function moveDirectoryAcrossDevices(fs: GitPluginInstallerFileSystem, from: string, to: string): Promise<void> {
-// Cache roots may live on another filesystem from temp roots in tests or
-// custom XDG setups. EXDEV is the only expected reason to degrade from atomic
-// rename to copy+remove.
-  try {
-    await fs.rename(from, to);
-  } catch (error) {
-    if (!hasErrorCode(error, "EXDEV")) throw error;
-    await fs.cp(from, to, { recursive: true });
-    await fs.rm(from, { recursive: true, force: true });
-  }
-}
-
-function hasErrorCode(value: unknown, code: string): boolean {
-  return typeof value === "object"
-    && value !== null
-    && "code" in value
-    && value.code === code;
 }
 
 function formatUnknownError(error: unknown): string {

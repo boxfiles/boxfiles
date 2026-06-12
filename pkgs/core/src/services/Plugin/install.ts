@@ -10,13 +10,14 @@
 // cache state.
 
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { dirname, join } from "node:path";
+import { join } from "node:path";
 import { BoxfilesRcParseError, BoxfilesRcReadError, BoxfilesRcValidationError } from "../../exceptions/config";
-import { BoxfilesRcConfigDTO, readBoxfilesRcConfig, type BoxfilesRcConfigDto } from "../Config";
-import { resolveFilePluginSource } from "../FilePluginResolver";
-import { installGitPluginSource } from "../GitPluginInstaller";
-import { installNpmPluginSource } from "../NpmPluginInstaller";
+import { readBoxfilesRcConfig } from "../Config";
+import { resolveFilePluginSource } from "./transports/file";
+import { installGitPluginSource } from "./transports/git";
+import { installNpmPluginSource } from "./transports/npm";
 import { getPluginCacheEntry, type PluginCacheRootOptions } from "./cache";
+import { assertPluginDeclarationId, configDtoToWritablePluginConfig, isPlainObject, upsertPluginDeclarationInConfig } from "./configDeclarations";
 import { parsePluginSource, type FilePluginSource, type GitPluginSource, type NpmPluginSource, type ParsedPluginSource } from "./source";
 import { pluginReproducibilityWarning, type PluginReproducibilityWarning } from "./warnings";
 
@@ -64,7 +65,7 @@ export async function installPluginDeclaration(
   sourceText: string,
   options: PluginInstallOptions,
 ): Promise<PluginInstallResult> {
-  validatePluginId(id);
+  assertPluginDeclarationId(id, (message) => new PluginInstallError(message));
   const source = parsePluginSource(sourceText);
   const configPath = join(options.rootDir, ".boxfilesrc");
   const fs = options.fs ?? nodeFileSystem;
@@ -135,7 +136,7 @@ async function writePluginDeclarationWithDiagnostics(
   cacheOptions: PluginCacheRootOptions | undefined,
 ): Promise<void> {
   try {
-    await upsertPluginDeclaration(configPath, id, sourceText, config, fs);
+    await upsertPluginDeclarationInConfig(configPath, id, sourceText, config, fs);
   } catch (error) {
     const cacheEntry = getPluginCacheEntry(source, cacheOptions);
     if (cacheEntry === null) throw error;
@@ -145,33 +146,13 @@ async function writePluginDeclarationWithDiagnostics(
   }
 }
 
-async function upsertPluginDeclaration(
-  configPath: string,
-  id: string,
-  sourceText: string,
-  config: Readonly<Record<string, unknown>>,
-  fs: PluginInstallFileSystem,
-): Promise<void> {
-  const plugins = readPluginMap(config);
-  const updated = {
-    ...config,
-    plugins: {
-      ...plugins,
-      [id]: sourceText,
-    },
-  };
-
-  BoxfilesRcConfigDTO.parse(updated);
-  await fs.mkdir(dirname(configPath), { recursive: true });
-  await fs.writeFile(configPath, `${JSON.stringify(updated, null, 2)}\n`);
-}
 
 async function readExistingConfig(
   configPath: string,
   fs: PluginInstallFileSystem,
 ): Promise<Readonly<Record<string, unknown>>> {
   try {
-    return configDtoToWritableConfig(await readBoxfilesRcConfig(configPath, { fs }));
+    return configDtoToWritablePluginConfig(await readBoxfilesRcConfig(configPath, { fs }));
   } catch (error) {
     if (error instanceof BoxfilesRcParseError) {
       throw new PluginInstallError(`Unable to parse .boxfilesrc as JSON: ${formatUnknownError(error.cause)}`);
@@ -188,39 +169,6 @@ async function readExistingConfig(
     throw error;
   }
 }
-
-function configDtoToWritableConfig(config: BoxfilesRcConfigDto): Readonly<Record<string, unknown>> {
-  const plugins = Object.fromEntries(config.plugins.map((plugin) => [plugin.name, plugin.source]));
-  if (config.settings === undefined && config.plugins.length === 0) return {};
-  if (config.plugins.length === 0) return { settings: config.settings };
-  if (config.settings === undefined) return { plugins };
-  return { settings: config.settings, plugins };
-}
-
-function readPluginMap(config: Readonly<Record<string, unknown>>): Readonly<Record<string, string>> {
-  const plugins = config["plugins"];
-  if (plugins === undefined) return {};
-  if (!isPlainObject(plugins)) return {};
-
-  const entries: [string, string][] = [];
-  for (const [pluginId, pluginSource] of Object.entries(plugins)) {
-    if (typeof pluginSource === "string") entries.push([pluginId, pluginSource]);
-  }
-
-  return Object.fromEntries(entries);
-}
-
-function validatePluginId(id: string): void {
-  if (id.trim().length > 0) return;
-  throw new PluginInstallError("Plugin id must be non-empty.");
-}
-
-function isPlainObject(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
-}
-
 
 function formatUnknownError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

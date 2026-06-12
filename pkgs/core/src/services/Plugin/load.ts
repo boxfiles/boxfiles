@@ -13,10 +13,11 @@ import { join } from "node:path";
 import { pathToFileURL } from "node:url";
 import { BoxfilesRcParseError, BoxfilesRcReadError } from "../../exceptions/config";
 import { readBoxfilesRcConfig, type BoxfilesRcConfigDto } from "../Config";
-import { resolveFilePluginSource, resolvePluginEntryPath, type FilePluginResolverFileSystem } from "../FilePluginResolver";
+import { resolvePluginArtifactEntryPath } from "./artifact";
 import { getPluginCacheEntry, type PluginCacheRootOptions } from "./cache";
+import { resolveFilePluginSource, type FilePluginResolverFileSystem } from "./transports/file";
 import { parsePluginSource, type ParsedPluginSource } from "./source";
-import { normalizePluginModule, type PluginService, type PluginSource } from "../Plugins";
+import { normalizePluginModule, type PluginService, type PluginSource } from "./index";
 
 export type PluginLoaderFileSystem = FilePluginResolverFileSystem & {
   readonly readFile: (path: string, encoding: "utf8") => Promise<string>;
@@ -122,7 +123,7 @@ async function resolvePluginDeclarationEntryPath(
   }
 
   await assertCachedPluginDirectory(cacheEntry.path, fs);
-  return await resolvePluginEntryPath(fs, cacheEntry.path);
+  return await resolvePluginArtifactEntryPath(cacheEntry.path, fs);
 }
 
 async function assertCachedPluginDirectory(

@@ -7,8 +7,9 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { BoxfilesRcParseError, BoxfilesRcReadError, BoxfilesRcValidationError } from "../../exceptions/config";
-import { BoxfilesRcConfigDTO, readBoxfilesRcConfig, type BoxfilesRcConfigDto } from "../Config";
+import { readBoxfilesRcConfig } from "../Config";
 import { getPluginCacheEntry, type PluginCacheEntry, type PluginCacheRootOptions } from "./cache";
+import { assertPluginDeclarationId, configDtoToWritablePluginConfig, isPlainObject, omitPluginDeclaration, readPluginDeclarationMap, removePluginDeclarationFromConfig } from "./configDeclarations";
 import { parsePluginSource } from "./source";
 
 export type PluginRemoveFileSystem = {
@@ -49,20 +50,18 @@ export async function removePluginDeclaration(
   id: string,
   options: PluginRemoveOptions,
 ): Promise<PluginRemoveResult> {
-  validatePluginId(id);
+  assertPluginDeclarationId(id, (message) => new PluginRemoveError(message));
   const configPath = join(options.rootDir, ".boxfilesrc");
   const fs = options.fs ?? nodeFileSystem;
   const config = await readExistingConfig(configPath, fs);
-  const plugins = readPluginMap(config);
+  const plugins = readPluginDeclarationMap(config);
   const sourceText = plugins[id];
   if (sourceText === undefined) throw new PluginRemoveError(`Plugin ${JSON.stringify(id)} is not declared in .boxfilesrc.`);
 
-  const remainingPlugins = omitPlugin(plugins, id);
+  const remainingPlugins = omitPluginDeclaration(plugins, id);
   const cacheEntry = getPluginCacheEntry(parsePluginSource(sourceText), options.cache);
   const purgeSkippedReason = getPurgeSkippedReason(options.purge === true, cacheEntry, remainingPlugins, options.cache);
-  const updated = buildUpdatedConfig(config, remainingPlugins);
-  BoxfilesRcConfigDTO.parse(updated);
-  await fs.writeFile(configPath, `${JSON.stringify(updated, null, 2)}\n`);
+  await removePluginDeclarationFromConfig(configPath, remainingPlugins, config, fs);
 
   if (options.purge !== true) {
     return buildResult(id, sourceText, configPath, false, "not-requested", cacheEntry);
@@ -122,29 +121,12 @@ function isCacheEntryReferenced(
   });
 }
 
-function buildUpdatedConfig(
-  config: Readonly<Record<string, unknown>>,
-  plugins: Readonly<Record<string, string>>,
-): Readonly<Record<string, unknown>> {
-  if (Object.keys(plugins).length > 0) return { ...config, plugins };
-  const { plugins: _removed, ...rest } = config;
-  void _removed;
-  return rest;
-}
-
-function omitPlugin(
-  plugins: Readonly<Record<string, string>>,
-  id: string,
-): Readonly<Record<string, string>> {
-  return Object.fromEntries(Object.entries(plugins).filter(([pluginId]) => pluginId !== id));
-}
-
 async function readExistingConfig(
   configPath: string,
   fs: PluginRemoveFileSystem,
 ): Promise<Readonly<Record<string, unknown>>> {
   try {
-    return configDtoToWritableConfig(await readBoxfilesRcConfig(configPath, { fs, missingFile: "throw" }));
+    return configDtoToWritablePluginConfig(await readBoxfilesRcConfig(configPath, { fs, missingFile: "throw" }));
   } catch (error) {
     if (error instanceof BoxfilesRcReadError && hasErrorCode(error.cause, "ENOENT")) {
       throw new PluginRemoveError(".boxfilesrc does not exist.");
@@ -164,32 +146,6 @@ async function readExistingConfig(
 
     throw error;
   }
-}
-
-function configDtoToWritableConfig(config: BoxfilesRcConfigDto): Readonly<Record<string, unknown>> {
-  const plugins = Object.fromEntries(config.plugins.map((plugin) => [plugin.name, plugin.source]));
-  if (config.settings === undefined && config.plugins.length === 0) return {};
-  if (config.plugins.length === 0) return { settings: config.settings };
-  if (config.settings === undefined) return { plugins };
-  return { settings: config.settings, plugins };
-}
-
-function readPluginMap(config: Readonly<Record<string, unknown>>): Readonly<Record<string, string>> {
-  const plugins = config["plugins"];
-  if (plugins === undefined) return {};
-  if (!isPlainObject(plugins)) return {};
-  return Object.fromEntries(Object.entries(plugins).filter((entry): entry is [string, string] => typeof entry[1] === "string"));
-}
-
-function validatePluginId(id: string): void {
-  if (id.trim().length > 0) return;
-  throw new PluginRemoveError("Plugin id must be non-empty.");
-}
-
-function isPlainObject(value: unknown): value is Readonly<Record<string, unknown>> {
-  if (typeof value !== "object" || value === null || Array.isArray(value)) return false;
-  const prototype = Object.getPrototypeOf(value);
-  return prototype === Object.prototype || prototype === null;
 }
 
 function hasErrorCode(value: unknown, code: string): boolean {
