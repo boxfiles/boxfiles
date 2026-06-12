@@ -10,7 +10,8 @@
 // cache state.
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { BoxfilesRcConfigDTO } from "./Config/index";
+import { BoxfilesRcParseError, BoxfilesRcReadError, BoxfilesRcValidationError } from "../exceptions/config";
+import { BoxfilesRcConfigDTO, readBoxfilesRcConfig, type BoxfilesRcConfigDto } from "./Config/index";
 import { resolveFilePluginSource } from "./FilePluginResolver";
 import { installGitPluginSource } from "./GitPluginInstaller";
 import { installNpmPluginSource } from "./NpmPluginInstaller";
@@ -167,24 +168,31 @@ async function readExistingConfig(
   configPath: string,
   fs: PluginInstallFileSystem,
 ): Promise<Readonly<Record<string, unknown>>> {
-  let text: string;
   try {
-    text = await fs.readFile(configPath, "utf8");
+    return configDtoToWritableConfig(await readBoxfilesRcConfig(configPath, { fs }));
   } catch (error) {
-    if (hasErrorCode(error, "ENOENT")) return {};
+    if (error instanceof BoxfilesRcParseError) {
+      throw new PluginInstallError(`Unable to parse .boxfilesrc as JSON: ${formatUnknownError(error.cause)}`);
+    }
+
+    if (error instanceof BoxfilesRcReadError) {
+      throw error.cause;
+    }
+
+    if (error instanceof BoxfilesRcValidationError && !isPlainObject(error.value)) {
+      throw new PluginInstallError(".boxfilesrc must contain a JSON object.");
+    }
+
     throw error;
   }
+}
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text) as unknown;
-  } catch (error) {
-    throw new PluginInstallError(`Unable to parse .boxfilesrc as JSON: ${formatUnknownError(error)}`);
-  }
-
-  BoxfilesRcConfigDTO.parse(parsed);
-  if (isPlainObject(parsed)) return parsed;
-  throw new PluginInstallError(".boxfilesrc must contain a JSON object.");
+function configDtoToWritableConfig(config: BoxfilesRcConfigDto): Readonly<Record<string, unknown>> {
+  const plugins = Object.fromEntries(config.plugins.map((plugin) => [plugin.name, plugin.source]));
+  if (config.settings === undefined && config.plugins.length === 0) return {};
+  if (config.plugins.length === 0) return { settings: config.settings };
+  if (config.settings === undefined) return { plugins };
+  return { settings: config.settings, plugins };
 }
 
 function readPluginMap(config: Readonly<Record<string, unknown>>): Readonly<Record<string, string>> {
@@ -211,12 +219,6 @@ function isPlainObject(value: unknown): value is Readonly<Record<string, unknown
   return prototype === Object.prototype || prototype === null;
 }
 
-function hasErrorCode(value: unknown, code: string): boolean {
-  return typeof value === "object"
-    && value !== null
-    && "code" in value
-    && value["code"] === code;
-}
 
 function formatUnknownError(error: unknown): string {
   return error instanceof Error ? error.message : String(error);

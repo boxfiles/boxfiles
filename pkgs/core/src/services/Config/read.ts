@@ -10,7 +10,7 @@ export interface BoxfilesRcFileSystem {
   readFile(path: string, encoding: "utf8"): Promise<string>;
 }
 
-export type BoxfilesRcMissingFilePolicy = "default-empty";
+export type BoxfilesRcMissingFilePolicy = "default-empty" | "throw";
 
 export interface ReadBoxfilesRcConfigOptions {
   readonly fs?: BoxfilesRcFileSystem;

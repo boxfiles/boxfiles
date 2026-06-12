@@ -10,7 +10,8 @@
 import { access, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { BoxfilesRcConfigDTO, type BoxfilesRcConfigDto } from "./Config/index";
+import { BoxfilesRcParseError, BoxfilesRcReadError } from "../exceptions/config";
+import { readBoxfilesRcConfig, type BoxfilesRcConfigDto } from "./Config/index";
 import { resolveFilePluginSource, resolvePluginEntryPath, type FilePluginResolverFileSystem } from "./FilePluginResolver";
 import { getPluginCacheEntry, type PluginCacheRootOptions } from "./PluginCache";
 import { parsePluginSource, type ParsedPluginSource } from "./PluginSources";
@@ -83,22 +84,19 @@ async function readConfig(
   configPath: string,
   fs: PluginLoaderFileSystem,
 ): Promise<BoxfilesRcConfigDto> {
-  let text: string;
   try {
-    text = await fs.readFile(configPath, "utf8");
+    return await readBoxfilesRcConfig(configPath, { fs });
   } catch (error) {
-    if (hasErrorCode(error, "ENOENT")) return BoxfilesRcConfigDTO.parse({});
-    throw new PluginLoadError(`Unable to read .boxfilesrc: ${formatUnknownError(error)}`);
-  }
+    if (error instanceof BoxfilesRcReadError) {
+      throw new PluginLoadError(`Unable to read .boxfilesrc: ${formatUnknownError(error.cause)}`);
+    }
 
-  let raw: unknown;
-  try {
-    raw = JSON.parse(text) as unknown;
-  } catch (error) {
-    throw new PluginLoadError(`Unable to parse .boxfilesrc as JSON: ${formatUnknownError(error)}`);
-  }
+    if (error instanceof BoxfilesRcParseError) {
+      throw new PluginLoadError(`Unable to parse .boxfilesrc as JSON: ${formatUnknownError(error.cause)}`);
+    }
 
-  return BoxfilesRcConfigDTO.parse(raw);
+    throw error;
+  }
 }
 
 async function resolvePluginDeclarationEntryPath(

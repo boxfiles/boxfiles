@@ -1,6 +1,7 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { BoxfilesRcConfigDTO } from "./Config/index";
+import { BoxfilesRcParseError, BoxfilesRcReadError, BoxfilesRcValidationError } from "../exceptions/config";
+import { BoxfilesRcConfigDTO, readBoxfilesRcConfig, type BoxfilesRcConfigDto } from "./Config/index";
 import { getPluginCacheEntry, type PluginCacheEntry, type PluginCacheRootOptions } from "./PluginCache";
 import { parsePluginSource } from "./PluginSources";
 
@@ -136,24 +137,35 @@ async function readExistingConfig(
   configPath: string,
   fs: PluginRemoveFileSystem,
 ): Promise<Readonly<Record<string, unknown>>> {
-  let text: string;
   try {
-    text = await fs.readFile(configPath, "utf8");
+    return configDtoToWritableConfig(await readBoxfilesRcConfig(configPath, { fs, missingFile: "throw" }));
   } catch (error) {
-    if (hasErrorCode(error, "ENOENT")) throw new PluginRemoveError(".boxfilesrc does not exist.");
+    if (error instanceof BoxfilesRcReadError && hasErrorCode(error.cause, "ENOENT")) {
+      throw new PluginRemoveError(".boxfilesrc does not exist.");
+    }
+
+    if (error instanceof BoxfilesRcReadError) {
+      throw error.cause;
+    }
+
+    if (error instanceof BoxfilesRcParseError) {
+      throw new PluginRemoveError(`Unable to parse .boxfilesrc as JSON: ${formatUnknownError(error.cause)}`);
+    }
+
+    if (error instanceof BoxfilesRcValidationError && !isPlainObject(error.value)) {
+      throw new PluginRemoveError(".boxfilesrc must contain a JSON object.");
+    }
+
     throw error;
   }
+}
 
-  let parsed: unknown;
-  try {
-    parsed = JSON.parse(text) as unknown;
-  } catch (error) {
-    throw new PluginRemoveError(`Unable to parse .boxfilesrc as JSON: ${formatUnknownError(error)}`);
-  }
-
-  BoxfilesRcConfigDTO.parse(parsed);
-  if (isPlainObject(parsed)) return parsed;
-  throw new PluginRemoveError(".boxfilesrc must contain a JSON object.");
+function configDtoToWritableConfig(config: BoxfilesRcConfigDto): Readonly<Record<string, unknown>> {
+  const plugins = Object.fromEntries(config.plugins.map((plugin) => [plugin.name, plugin.source]));
+  if (config.settings === undefined && config.plugins.length === 0) return {};
+  if (config.plugins.length === 0) return { settings: config.settings };
+  if (config.settings === undefined) return { plugins };
+  return { settings: config.settings, plugins };
 }
 
 function readPluginMap(config: Readonly<Record<string, unknown>>): Readonly<Record<string, string>> {

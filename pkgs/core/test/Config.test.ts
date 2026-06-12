@@ -142,6 +142,14 @@ describe("readBoxfilesRcConfig", () => {
     expect(config.settings).toBeUndefined();
   });
 
+  test("rejects missing .boxfilesrc when configured as required", async () => {
+    const fs = createUnreadableConfigFileSystem("ENOENT");
+
+    await expect(readBoxfilesRcConfig(CONFIG_PATH, { fs, missingFile: "throw" })).rejects.toThrow(
+      `Unable to read .boxfilesrc at ${CONFIG_PATH}: ENOENT`,
+    );
+  });
+
   test("rejects malformed JSON from .boxfilesrc", async () => {
     const fs = createConfigFileSystem("{ not json }");
 

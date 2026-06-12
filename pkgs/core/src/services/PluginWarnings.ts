@@ -9,7 +9,7 @@
 // remote plugins and live paths for file plugins.
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { BoxfilesRcConfigDTO } from "./Config/index";
+import { readBoxfilesRcConfig } from "./Config/index";
 import { parsePluginSource, type ParsedPluginSource } from "./PluginSources";
 
 export type PluginReproducibilityWarning = {
@@ -42,17 +42,7 @@ const nodeFileSystem: PluginWarningsFileSystem = {
 ): Promise<readonly PluginReproducibilityWarning[]> {
   const fs = options.fs ?? nodeFileSystem;
   const configPath = join(options.rootDir, ".boxfilesrc");
-  let text: string;
-
-  try {
-    text = await fs.readFile(configPath, "utf8");
-  } catch (error) {
-    if (hasErrorCode(error, "ENOENT")) return [];
-    throw error;
-  }
-
-  const raw = JSON.parse(text) as unknown;
-  const config = BoxfilesRcConfigDTO.parse(raw);
+  const config = await readBoxfilesRcConfig(configPath, { fs });
   return config.plugins.map((plugin) => pluginReproducibilityWarning(plugin.name, plugin.source));
 }
 
@@ -103,11 +93,4 @@ function warningMessage(source: ParsedPluginSource): string {
   }
 
   return "file source is local machine state. It is not reproducible across workstations; planning uses the local path directly.";
-}
-
-function hasErrorCode(value: unknown, code: string): boolean {
-  return typeof value === "object"
-    && value !== null
-    && "code" in value
-    && value["code"] === code;
 }
