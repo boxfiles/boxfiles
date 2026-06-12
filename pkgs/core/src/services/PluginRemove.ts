@@ -1,7 +1,7 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { BoxfilesRcParseError, BoxfilesRcReadError, BoxfilesRcValidationError } from "../exceptions/config";
-import { BoxfilesRcConfigDTO, readBoxfilesRcConfig, type BoxfilesRcConfigDto } from "./Config/index";
+import { BoxfilesRcConfigDTO, readBoxfilesRcConfig, type BoxfilesRcConfigDto } from "./Config";
 import { getPluginCacheEntry, type PluginCacheEntry, type PluginCacheRootOptions } from "./PluginCache";
 import { parsePluginSource } from "./PluginSources";
 
