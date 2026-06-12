@@ -1,6 +1,15 @@
-import { formatPluginReproducibilityWarnings, installPluginDeclaration, removePluginDeclaration, type PluginRemoveResult, type PluginReproducibilityWarning } from "@boxfiles/core";
+import {
+  formatPluginReproducibilityWarnings,
+  installPluginDeclaration,
+  readPluginReproducibilityWarnings,
+  removePluginDeclaration,
+  type PluginRemoveResult,
+  type PluginReproducibilityWarning,
+  RuntimeRootMismatchError,
+} from "@boxfiles/core";
 import { app } from "../app";
 import { formatCommandError } from "../common/console";
+import { getActiveRuntime } from "../runtime";
 import { markdownView } from "../views/markdown";
 
 export const pluginCmd = app
@@ -21,8 +30,14 @@ export const pluginCmd = app
         try {
           const id = readStringArg(input.args, "id");
           const source = readStringArg(input.args, "source");
-          const result = await installPluginDeclaration(id, source, { rootDir: input.flags.dir });
-          console.log(markdownView(formatInstallSuccess(result.id, result.source, result.warning)));
+          const result = await installPluginDeclaration(id, source, {
+            rootDir: input.flags.dir,
+          });
+          console.log(
+            markdownView(
+              formatInstallSuccess(result.id, result.source, result.warning),
+            ),
+          );
         } catch (error) {
           process.exitCode = 1;
           console.error(markdownView(formatCommandError(error)));
@@ -38,23 +53,92 @@ export const pluginCmd = app
         purge: {
           type: "boolean",
           default: false,
-          description: "Also delete the plugin cache entry when no remaining declaration references it.",
+          description:
+            "Also delete the plugin cache entry when no remaining declaration references it.",
         },
       })
-      .args([
-        { name: "id", type: "string" },
-      ])
+      .args([{ name: "id", type: "string" }])
       .run(async (input) => {
         try {
           const id = readStringArg(input.args, "id");
-          const result = await removePluginDeclaration(id, { rootDir: input.flags.dir, purge: readBooleanFlag(input.flags, "purge") });
+          const result = await removePluginDeclaration(id, {
+            rootDir: input.flags.dir,
+            purge: readBooleanFlag(input.flags, "purge"),
+          });
           console.log(markdownView(formatRemoveSuccess(result)));
         } catch (error) {
           process.exitCode = 1;
           console.error(markdownView(formatCommandError(error)));
         }
       }),
-  );
+  )
+  .command("list", (cmd) =>
+    cmd
+      .meta({
+        description: "List registered plugins and action providers.",
+      })
+      .run(async (input) => {
+        await runPluginsCommand(async () => {
+          await listPlugins(input.flags.dir);
+        });
+      }),
+  )
+  .run(async (input) => {
+    await runPluginsCommand(async () => {
+      await listPlugins(input.flags.dir);
+    });
+  });
+
+async function runPluginsCommand(command: () => Promise<void>): Promise<void> {
+  try {
+    await command();
+  } catch (error) {
+    process.exitCode = 1;
+    console.error(formatCommandError(error));
+  }
+}
+
+async function listPlugins(rootDir: string): Promise<void> {
+  const runtime = getActiveRuntime();
+  if (runtime.pluginService.rootDir !== rootDir) {
+    throw new RuntimeRootMismatchError(rootDir, runtime.pluginService.rootDir);
+  }
+
+  const plugins = runtime.pluginService.listPlugins();
+  const warnings = await readPluginReproducibilityWarnings({ rootDir });
+  const warningSection = formatPluginReproducibilityWarnings(warnings);
+  if (plugins.length === 0) {
+    console.log("No plugins registered.");
+    return;
+  }
+
+  const rows = plugins.map((plugin) => {
+    const context =
+      plugin.contextKeys.length === 0
+        ? "none"
+        : plugin.contextKeys.map((key) => `\`${key}\``).join(", ");
+    const actions =
+      plugin.actionKinds.length === 0
+        ? "none"
+        : plugin.actionKinds.map((kind) => `\`${kind}\``).join(", ");
+
+    return `| \`${plugin.id}\` | ${plugin.source} | ${context} | ${actions} |`;
+  });
+
+  const sections = [
+    [
+      "## Plugins",
+      "",
+      "| Plugin | Source | Context facts | Action providers |",
+      "|---|---|---|---|",
+      ...rows,
+    ].join("\n"),
+  ];
+
+  if (warningSection.length > 0) sections.push(warningSection);
+
+  console.log(markdownView(sections.join("\n\n")));
+}
 
 function readStringArg(args: unknown, name: string): string {
   if (!isRecord(args)) throw new Error(`Missing required argument ${name}.`);
@@ -68,17 +152,25 @@ function readBooleanFlag(flags: unknown, name: string): boolean {
   return flags[name] === true;
 }
 
-function formatInstallSuccess(id: string, source: string, warning: PluginReproducibilityWarning): string {
+function formatInstallSuccess(
+  id: string,
+  source: string,
+  warning: PluginReproducibilityWarning,
+): string {
   return [
     `Installed plugin \`${id}\` from \`${source}\` into .boxfilesrc.`,
     "",
     formatPluginReproducibilityWarnings([warning]),
   ].join("\n");
 }
+
 function formatRemoveSuccess(result: PluginRemoveResult): string {
-  if (result.purged) return `Removed plugin \`${result.id}\` from .boxfilesrc and purged cache \`${result.cacheEntry?.path ?? ""}\`.`;
-  if (result.purgeSkippedReason === "not-cacheable") return `Removed plugin \`${result.id}\` from .boxfilesrc; no cache entry exists for file sources.`;
-  if (result.purgeSkippedReason === "still-referenced") return `Removed plugin \`${result.id}\` from .boxfilesrc; kept cache because another declaration still references it.`;
+  if (result.purged)
+    return `Removed plugin \`${result.id}\` from .boxfilesrc and purged cache \`${result.cacheEntry?.path ?? ""}\`.`;
+  if (result.purgeSkippedReason === "not-cacheable")
+    return `Removed plugin \`${result.id}\` from .boxfilesrc; no cache entry exists for file sources.`;
+  if (result.purgeSkippedReason === "still-referenced")
+    return `Removed plugin \`${result.id}\` from .boxfilesrc; kept cache because another declaration still references it.`;
   return `Removed plugin \`${result.id}\` from .boxfilesrc. Cache was kept.`;
 }
 
