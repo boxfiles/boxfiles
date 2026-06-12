@@ -1,10 +1,14 @@
 import { describe, expect, test } from "bun:test";
 import {
   BoxfilesRcConfigDTO,
+  BoxfilesRcParseError,
   BoxfilesRcValidationError,
+  readBoxfilesRcConfig,
+  type BoxfilesRcFileSystem,
 } from "../src/index";
 
 const CONFIG_FIXTURE_ROOT = `${import.meta.dir}/fixtures/config-parser`;
+const CONFIG_PATH = "/workspace/.boxfilesrc";
 
 const INVALID_PLUGIN_FIXTURE_PATHS = [
   "invalid/missing-id-empty/.boxfilesrc",
@@ -128,8 +132,71 @@ describe("BoxfilesRcConfigDTO", () => {
   });
 });
 
+describe("readBoxfilesRcConfig", () => {
+  test("returns an empty normalized config when .boxfilesrc is missing", async () => {
+    const fs = createUnreadableConfigFileSystem("ENOENT");
+
+    const config = await readBoxfilesRcConfig(CONFIG_PATH, { fs });
+
+    expect(config.plugins).toEqual([]);
+    expect(config.settings).toBeUndefined();
+  });
+
+  test("rejects malformed JSON from .boxfilesrc", async () => {
+    const fs = createConfigFileSystem("{ not json }");
+
+    await expect(readBoxfilesRcConfig(CONFIG_PATH, { fs })).rejects.toThrow(BoxfilesRcParseError);
+  });
+
+  test("rejects invalid config read from .boxfilesrc", async () => {
+    const fs = createConfigFileSystem(JSON.stringify({ plugins: { copy: "github:boxfiles/provider-copy" } }));
+
+    await expect(readBoxfilesRcConfig(CONFIG_PATH, { fs })).rejects.toThrow(BoxfilesRcValidationError);
+  });
+
+  test("returns normalized config read from .boxfilesrc", async () => {
+    const fs = createConfigFileSystem(JSON.stringify({
+      plugins: {
+        copy: "npm:@boxfiles/provider-copy@1.0.0",
+        local: "file:./plugins/local",
+      },
+      settings: { plugins: { allowRemote: true } },
+    }));
+
+    const config = await readBoxfilesRcConfig(CONFIG_PATH, { fs });
+
+    expect(config.plugins).toEqual([
+      { name: "copy", source: "npm:@boxfiles/provider-copy@1.0.0" },
+      { name: "local", source: "file:./plugins/local" },
+    ]);
+    expect(config.settings?.plugins?.allowRemote).toBe(true);
+  });
+});
+
 async function readConfigFixture(relativePath: string): Promise<unknown> {
   return JSON.parse(await Bun.file(`${CONFIG_FIXTURE_ROOT}/${relativePath}`).text()) as unknown;
+}
+
+function createConfigFileSystem(content: string): BoxfilesRcFileSystem {
+  return {
+    async readFile(): Promise<string> {
+      return content;
+    },
+  };
+}
+
+function createUnreadableConfigFileSystem(code: string): BoxfilesRcFileSystem {
+  return {
+    async readFile(): Promise<string> {
+      throw errorWithCode(code);
+    },
+  };
+}
+
+function errorWithCode(code: string): Error & { readonly code: string } {
+  const error = new Error(code) as Error & { code: string };
+  error.code = code;
+  return error;
 }
 
 function expectInvalidBoxfilesRc(value: unknown): void {

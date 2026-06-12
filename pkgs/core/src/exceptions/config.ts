@@ -14,3 +14,29 @@ export class BoxfilesRcValidationError extends BoxfilesError {
     this.errors = error.errors;
   }
 }
+
+export class BoxfilesRcReadError extends BoxfilesError {
+  readonly path: string;
+  readonly cause: unknown;
+
+  constructor(path: string, cause: unknown) {
+    super(`Unable to read .boxfilesrc at ${path}: ${formatUnknownError(cause)}`);
+    this.path = path;
+    this.cause = cause;
+  }
+}
+
+export class BoxfilesRcParseError extends BoxfilesError {
+  readonly path: string;
+  readonly cause: unknown;
+
+  constructor(path: string, cause: unknown) {
+    super(`Unable to parse .boxfilesrc at ${path} as JSON: ${formatUnknownError(cause)}`);
+    this.path = path;
+    this.cause = cause;
+  }
+}
+
+function formatUnknownError(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
