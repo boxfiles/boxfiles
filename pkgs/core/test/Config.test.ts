@@ -2,8 +2,6 @@ import { describe, expect, test } from "bun:test";
 import {
   BoxfilesRcConfigDTO,
   BoxfilesRcValidationError,
-  normalizeBoxfilesRcConfig,
-  type BoxfilesRcFileDto,
 } from "../src/index";
 
 const CONFIG_FIXTURE_ROOT = `${import.meta.dir}/fixtures/config-parser`;
@@ -28,12 +26,11 @@ describe("BoxfilesRcConfigDTO", () => {
     ]);
     expect(parsed.settings?.facts?.collision).toBe("keep-first");
     expect(parsed.settings?.plugins?.allowRemote).toBe(true);
-    expect(parsed.facts).toEqual({ profile: "workstation" });
   });
 
   for (const fixturePath of INVALID_PLUGIN_FIXTURE_PATHS) {
     test(`rejects invalid .boxfilesrc plugin fixture ${fixturePath}`, async () => {
-      expectInvalidPluginDeclaration(await readConfigFixture(fixturePath));
+      expectInvalidBoxfilesRc(await readConfigFixture(fixturePath));
     });
   }
 
@@ -51,9 +48,6 @@ describe("BoxfilesRcConfigDTO", () => {
         workstation: "git:https://example.com/boxfiles/workstation.git#v1",
         local: "file:./plugins/local",
       },
-      facts: {
-        profile: "workstation",
-      },
     });
 
     expect(parsed.plugins).toEqual([
@@ -61,7 +55,10 @@ describe("BoxfilesRcConfigDTO", () => {
       { name: "workstation", source: "git:https://example.com/boxfiles/workstation.git#v1" },
       { name: "local", source: "file:./plugins/local" },
     ]);
-    expect(parsed.facts).toEqual({ profile: "workstation" });
+  });
+
+  test("rejects top-level facts declarations", () => {
+    expectInvalidBoxfilesRc({ facts: { profile: "workstation" } });
   });
 
   test("defaults omitted plugin declarations to an empty normalized list", () => {
@@ -71,36 +68,63 @@ describe("BoxfilesRcConfigDTO", () => {
     expect(parsed.settings?.facts?.collision).toBe("keep-first");
   });
 
-  test("normalizes an already validated file dto without reparsing", () => {
-    const fileDto: BoxfilesRcFileDto = {
+  test("preserves plugin declaration order from the parsed config object", () => {
+    const parsed = BoxfilesRcConfigDTO.parse({
       plugins: {
-        run: "npm:@boxfiles/provider-run@2.0.0",
+        first: "file:./plugins/first",
+        second: "npm:@boxfiles/provider-second@1.0.0",
+        third: "git:https://example.com/boxfiles/third.git#v1",
       },
-    };
+    });
 
-    expect(normalizeBoxfilesRcConfig(fileDto).plugins).toEqual([
-      { name: "run", source: "npm:@boxfiles/provider-run@2.0.0" },
-    ]);
+    expect(parsed.plugins.map((plugin) => plugin.name)).toEqual(["first", "second", "third"]);
   });
 
   test("rejects non-map plugin declarations", () => {
-    expectInvalidPluginDeclaration({ plugins: ["npm:@boxfiles/provider-copy"] });
+    expectInvalidBoxfilesRc({ plugins: ["npm:@boxfiles/provider-copy"] });
   });
 
   test("rejects blank plugin names", () => {
-    expectInvalidPluginDeclaration({ plugins: { " ": "npm:@boxfiles/provider-copy" } });
+    expectInvalidBoxfilesRc({ plugins: { " ": "npm:@boxfiles/provider-copy" } });
   });
 
   test("rejects blank plugin sources", () => {
-    expectInvalidPluginDeclaration({ plugins: { copy: "" } });
+    expectInvalidBoxfilesRc({ plugins: { copy: "" } });
   });
 
   test("rejects unsupported plugin source prefixes", () => {
-    expectInvalidPluginDeclaration({ plugins: { copy: "github:boxfiles/provider-copy" } });
+    expectInvalidBoxfilesRc({ plugins: { copy: "github:boxfiles/provider-copy" } });
   });
 
   test("rejects plugin source prefixes without a source value", () => {
-    expectInvalidPluginDeclaration({ plugins: { copy: "npm:" } });
+    expectInvalidBoxfilesRc({ plugins: { copy: "npm:" } });
+  });
+
+
+  test("accepts config-level settings", () => {
+    const parsed = BoxfilesRcConfigDTO.parse({
+      settings: {
+        facts: { collision: "override" },
+        plugins: { allowRemote: false },
+      },
+    });
+
+    expect(parsed.settings?.facts?.collision).toBe("override");
+    expect(parsed.settings?.plugins?.allowRemote).toBe(false);
+  });
+
+  test("rejects unknown top-level config keys", () => {
+    expectInvalidBoxfilesRc({ plugins: {}, profile: "workstation" });
+  });
+
+  test("rejects unknown nested settings keys", () => {
+    expectInvalidBoxfilesRc({ settings: { facts: { collision: "error", extra: true } } });
+    expectInvalidBoxfilesRc({ settings: { plugins: { allowRemote: true, extra: true } } });
+    expectInvalidBoxfilesRc({ settings: { extra: true } });
+  });
+
+  test("rejects invalid fact collision policies", () => {
+    expectInvalidBoxfilesRc({ settings: { facts: { collision: "last-wins" } } });
   });
 });
 
@@ -108,7 +132,7 @@ async function readConfigFixture(relativePath: string): Promise<unknown> {
   return JSON.parse(await Bun.file(`${CONFIG_FIXTURE_ROOT}/${relativePath}`).text()) as unknown;
 }
 
-function expectInvalidPluginDeclaration(value: unknown): void {
+function expectInvalidBoxfilesRc(value: unknown): void {
   expect(() => BoxfilesRcConfigDTO.parse(value)).toThrow(BoxfilesRcValidationError);
 
   try {
@@ -121,5 +145,5 @@ function expectInvalidPluginDeclaration(value: unknown): void {
     return;
   }
 
-  throw new Error("Expected invalid .boxfilesrc plugin declaration to fail validation");
+  throw new Error("Expected invalid .boxfilesrc config to fail validation");
 }

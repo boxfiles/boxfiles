@@ -1,6 +1,6 @@
 import { readFile, rm, writeFile } from "node:fs/promises";
 import { join } from "node:path";
-import { BoxfilesRcConfigDTO } from "./Config";
+import { BoxfilesRcConfigDTO } from "./Config/index";
 import { getPluginCacheEntry, type PluginCacheEntry, type PluginCacheRootOptions } from "./PluginCache";
 import { parsePluginSource } from "./PluginSources";
 

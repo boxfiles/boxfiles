@@ -77,7 +77,7 @@ const SCHEMA_FILES: readonly SchemaFile[] = [
     fileName: "boxfilesrc.schema.json",
     id: "https://boxfiles.dev/schemas/boxfilesrc.schema.json",
     title: "Boxfiles rc config",
-    description: "A Boxfiles rc config file that declares plugins and contributes project or user facts.",
+    description: "A Boxfiles rc config file that declares plugins and config-level settings.",
     schema: BoxfilesRcFileSchema,
   },
 ];

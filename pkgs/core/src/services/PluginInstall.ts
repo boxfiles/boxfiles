@@ -10,7 +10,7 @@
 // cache state.
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { dirname, join } from "node:path";
-import { BoxfilesRcConfigDTO } from "./Config";
+import { BoxfilesRcConfigDTO } from "./Config/index";
 import { resolveFilePluginSource } from "./FilePluginResolver";
 import { installGitPluginSource } from "./GitPluginInstaller";
 import { installNpmPluginSource } from "./NpmPluginInstaller";

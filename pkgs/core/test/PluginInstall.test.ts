@@ -4,7 +4,7 @@ import { getPluginCacheEntry, installPluginDeclaration, parsePluginSource, type 
 describe("installPluginDeclaration", () => {
   test("validates config and fetches npm source before writing string shorthand to .boxfilesrc", async () => {
     const events: string[] = [];
-    const fs = createConfigFs(events, JSON.stringify({ facts: { profile: "dev" }, plugins: { old: "file:./old" } }));
+    const fs = createConfigFs(events, JSON.stringify({ settings: { plugins: { allowRemote: true } }, plugins: { old: "file:./old" } }));
 
     await installPluginDeclaration("demo", "npm:@boxfiles/plugin-demo@1.2.3", {
       rootDir: "/workspace/project",

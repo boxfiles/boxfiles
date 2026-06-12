@@ -1,8 +1,5 @@
 import Type from "typebox";
-import Schema from "typebox/schema";
-import { NonBlankStringSchema } from "../common/schema";
-import { BoxfilesRcValidationError } from "../exceptions/config";
-import type { TypeboxValidationErrorLike } from "../exceptions/manifest";
+import { NonBlankStringSchema } from "../../common/schema";
 
 export const PluginDeclarationNameSchema = Type.Readonly(NonBlankStringSchema);
 export const PluginDeclarationSourceSchema = Type.Readonly(Type.Union([
@@ -63,16 +60,13 @@ export const BoxfilesRcFileSchema = Type.Object(
       },
       {
         additionalProperties: false,
-        description: "Config-level settings that affect config-derived facts and plugin loading.",
+        description: "Config-level settings that affect fact collision handling and plugin loading.",
       },
     ))),
-    facts: Type.Readonly(Type.Optional(Type.Record(NonBlankStringSchema, Type.Unknown(), {
-      description: "Static facts contributed by this config file.",
-    }))),
   },
   {
     title: "Boxfiles rc config",
-    description: "Project or user config for plugins, settings, and static facts loaded from .boxfilesrc files.",
+    description: "Project or user config for plugins and settings loaded from .boxfilesrc files.",
     additionalProperties: false,
   },
 );
@@ -87,46 +81,3 @@ export type NormalizedPluginDeclarationDto = Type.Static<typeof NormalizedPlugin
 export type BoxfilesRcConfigDto = Omit<BoxfilesRcFileDto, "plugins"> & {
   readonly plugins: readonly NormalizedPluginDeclarationDto[];
 };
-
-const BoxfilesRcFileDtoParser = Schema.Compile(BoxfilesRcFileSchema);
-
-export const BoxfilesRcConfigDTO = {
-  parse(raw: unknown): BoxfilesRcConfigDto {
-    let parsed: BoxfilesRcFileDto;
-
-    try {
-      parsed = BoxfilesRcFileDtoParser.Parse(raw);
-    } catch (error) {
-      if (isTypeboxValidationErrorLike(error)) {
-        throw new BoxfilesRcValidationError(raw, error);
-      }
-
-      throw error;
-    }
-
-    return normalizeBoxfilesRcConfig(parsed);
-  },
-};
-
-export function normalizeBoxfilesRcConfig(config: BoxfilesRcFileDto): BoxfilesRcConfigDto {
-  return {
-    settings: config.settings,
-    facts: config.facts,
-    plugins: Object.entries(config.plugins ?? {}).map(([name, source]) => ({
-      name,
-      source,
-    })),
-  };
-}
-
-function isTypeboxValidationErrorLike(
-  error: unknown,
-): error is TypeboxValidationErrorLike {
-  if (!error || typeof error !== "object" || Array.isArray(error)) return false;
-  if (!("schema" in error)) return false;
-  if (!("value" in error)) return false;
-  if (!("errors" in error)) return false;
-
-  const errors = (error as { readonly errors: unknown }).errors;
-  return Array.isArray(errors);
-}

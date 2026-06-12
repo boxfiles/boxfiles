@@ -24,7 +24,7 @@ describe("removePluginDeclaration", () => {
   test("purge deletes npm cache when no remaining declaration references it", async () => {
     const events: string[] = [];
     const source = "npm:plugin-demo@1.0.0";
-    const fs = createConfigFs(events, { facts: { profile: "dev" }, plugins: { demo: source, other: "git:https://example.com/org/other.git" } });
+    const fs = createConfigFs(events, { settings: { plugins: { allowRemote: true } }, plugins: { demo: source, other: "git:https://example.com/org/other.git" } });
     const removed: string[] = [];
 
     const result = await removePluginDeclaration("demo", {
@@ -37,7 +37,7 @@ describe("removePluginDeclaration", () => {
 
     expect(result.purged).toBe(true);
     expect(removed).toEqual([cachePath(source)]);
-    expect(readWrittenConfig(fs)).toEqual({ facts: { profile: "dev" }, plugins: { other: "git:https://example.com/org/other.git" } });
+    expect(readWrittenConfig(fs)).toEqual({ settings: { plugins: { allowRemote: true } }, plugins: { other: "git:https://example.com/org/other.git" } });
   });
 
   test("purge deletes git cache when no remaining declaration references it", async () => {

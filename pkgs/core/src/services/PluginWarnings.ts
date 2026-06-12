@@ -9,7 +9,7 @@
 // remote plugins and live paths for file plugins.
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { BoxfilesRcConfigDTO } from "./Config";
+import { BoxfilesRcConfigDTO } from "./Config/index";
 import { parsePluginSource, type ParsedPluginSource } from "./PluginSources";
 
 export type PluginReproducibilityWarning = {

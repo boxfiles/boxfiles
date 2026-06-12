@@ -10,7 +10,7 @@
 import { access, readFile, stat } from "node:fs/promises";
 import { join } from "node:path";
 import { pathToFileURL } from "node:url";
-import { BoxfilesRcConfigDTO, type BoxfilesRcConfigDto } from "./Config";
+import { BoxfilesRcConfigDTO, type BoxfilesRcConfigDto } from "./Config/index";
 import { resolveFilePluginSource, resolvePluginEntryPath, type FilePluginResolverFileSystem } from "./FilePluginResolver";
 import { getPluginCacheEntry, type PluginCacheRootOptions } from "./PluginCache";
 import { parsePluginSource, type ParsedPluginSource } from "./PluginSources";

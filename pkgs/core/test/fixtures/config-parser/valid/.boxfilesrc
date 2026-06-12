@@ -11,8 +11,5 @@
     "plugins": {
       "allowRemote": true
     }
-  },
-  "facts": {
-    "profile": "workstation"
   }
 }
