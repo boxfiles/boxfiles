@@ -6,8 +6,9 @@
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@crustjs/store": "*",
-    "@sinclair/typemap": "^0.10.1",
+    "@types/nconf": "^0.10.7",
+    "env-paths": "^4.0.0",
+    "nconf": "^0.13.0",
     "typebox": "^1.2.2"
   },
   "devDependencies": {
