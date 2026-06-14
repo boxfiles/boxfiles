@@ -83,6 +83,11 @@ export const PlanExecutionResultSchema = Type.Object({
 export type PlanExecutionStepResultDto = Type.Static<typeof PlanExecutionStepResultSchema>;
 export type PlanExecutionResultDto = Type.Static<typeof PlanExecutionResultSchema>;
 
+function formatExecutionError(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  return String(error);
+}
+
 export type ManifestPlanNode = CompiledManifestDto & {
   readonly children: ManifestPlanNode[];
 };
@@ -180,11 +185,21 @@ export class PlanExecutor {
         continue;
       }
 
-      const applied = await provider.apply({
-        action: step,
-        plan: action,
-        ctx: { rootDir: this.rootDir, facts: {}, manifest: manifest.manifest },
-      });
+      let applied: { readonly actionId: string; readonly success: boolean; readonly message?: string };
+      try {
+        applied = await provider.apply({
+          action: step,
+          plan: action,
+          ctx: { rootDir: this.rootDir, facts: {}, manifest: manifest.manifest },
+        });
+      } catch (error) {
+        results.push({
+          actionId: action.actionId as typeof action.actionId,
+          success: false,
+          message: formatExecutionError(error),
+        });
+        return { success: false, results };
+      }
 
       results.push({
         actionId: action.actionId as typeof action.actionId,

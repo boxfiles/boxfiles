@@ -50,7 +50,13 @@ async function runApply(rootDir: string, dryRun: boolean, confirm: boolean): Pro
 }
 
 function renderApplyDryRun(plan: ExecutionPlanDto): string {
-  return ["## Apply Plan", "", `Actions: ${plan.actions.length}`, `Manifests: ${plan.manifests.length}`].join("\n");
+  const lines = ["## Apply Dry Run", "", `Manifests: ${plan.manifests.length}`, `Actions: ${plan.actions.length}`, ""];
+
+  for (const action of plan.actions) {
+    lines.push(`- ${action.actionId} (${action.kind}) — ${action.summary}`);
+  }
+
+  return lines.join("\n");
 }
 
 function renderApplyReport(result: { readonly success: boolean; readonly results: readonly { readonly actionId: string; readonly success: boolean; readonly message?: string; }[]; }): string {
