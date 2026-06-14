@@ -78,4 +78,3 @@ CLI load
   -> execute confirmed plan
 ```
 
-
