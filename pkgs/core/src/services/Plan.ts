@@ -23,7 +23,7 @@ import {
   type CompiledManifestDto,
   type ManifestId,
 } from "./Manifest";
-import type { PluginService } from "./Plugin";
+import type { PluginRegistry } from "./Plugin";
 
 export const ActionSafetySchema = Type.Object({
   idempotent: Type.Readonly(Type.Boolean()),
@@ -76,17 +76,17 @@ export type ManifestPlanNode = CompiledManifestDto & {
 export class PlanService {
   public readonly manifests: readonly CompiledManifestDto[];
   public readonly context: ContextSnapshot;
-  private readonly pluginService: PluginService;
+  private readonly pluginRegistry: PluginRegistry;
   private readonly rootDir: string;
 
   constructor(
     rootDir: string,
-    pluginService: PluginService,
+    pluginRegistry: PluginRegistry,
     manifests: readonly CompiledManifestDto[],
     context: ContextSnapshot,
   ) {
     this.rootDir = rootDir;
-    this.pluginService = pluginService;
+    this.pluginRegistry = pluginRegistry;
     this.manifests = manifests;
     this.context = context;
   }
@@ -97,7 +97,7 @@ export class PlanService {
 
     for (const manifest of orderedManifests) {
       for (const step of manifest.steps) {
-        const provider = this.pluginService.getActionProvider(step.uses);
+        const provider = this.pluginRegistry.getActionProvider(step.uses);
         if (provider === null) {
           throw new NoProviderRegisteredError(manifest.id, step.uses);
         }

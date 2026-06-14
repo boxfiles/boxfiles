@@ -1,8 +1,7 @@
 import type { CrustPlugin } from "@crustjs/core";
 import {
   ManifestService,
-  PluginService,
-  loadInstalledPlugins,
+  PluginRegistry,
   RuntimeNotActiveError,
 } from "@boxfiles/core";
 import { builtInPlugins } from "./providers";
@@ -11,14 +10,14 @@ const RUNTIME_STATE_KEY = "boxfiles.runtime";
 
 export interface CliRuntime {
   readonly rootDir: string;
-  readonly pluginService: PluginService;
+  readonly pluginService: PluginRegistry;
   readonly manifestService: ManifestService;
 }
 
 let activeRuntime: CliRuntime | null = null;
 
 export function createCliRuntime(rootDir: string): CliRuntime {
-  const pluginService = new PluginService(rootDir);
+  const pluginService = new PluginRegistry();
   for (const plugin of builtInPlugins) {
     pluginService.registerPlugin(plugin, "builtin");
   }
@@ -30,7 +29,9 @@ export function createCliRuntime(rootDir: string): CliRuntime {
   };
 }
 
-export async function createConfiguredCliRuntime(rootDir: string): Promise<CliRuntime> {
+export async function createConfiguredCliRuntime(
+  rootDir: string,
+): Promise<CliRuntime> {
   return await createRuntimeForRoute(rootDir);
 }
 
@@ -41,10 +42,6 @@ async function createRuntimeForRoute(
   const runtime = createCliRuntime(rootDir);
   if (!shouldLoadInstalledPlugins(commandPath)) return runtime;
 
-  await loadInstalledPlugins({
-    rootDir,
-    pluginService: runtime.pluginService,
-  });
   return runtime;
 }
 
@@ -72,7 +69,10 @@ export function boxfilesRuntimePlugin(): CrustPlugin {
       }
 
       const previousRuntime = activeRuntime;
-      const runtime = await createRuntimeForRoute(rootDir, context.route?.commandPath);
+      const runtime = await createRuntimeForRoute(
+        rootDir,
+        context.route?.commandPath,
+      );
       context.state.set(RUNTIME_STATE_KEY, runtime);
       setActiveRuntime(runtime);
 
@@ -100,11 +100,14 @@ function readRootDir(flags: unknown): string | null {
   return dir;
 }
 
-
-function shouldLoadInstalledPlugins(commandPath: readonly string[] | undefined): boolean {
+function shouldLoadInstalledPlugins(
+  commandPath: readonly string[] | undefined,
+): boolean {
   if (commandPath === undefined) return true;
 
-  const pluginCommandIndex = commandPath.findIndex((segment) => segment === "plugin");
+  const pluginCommandIndex = commandPath.findIndex(
+    (segment) => segment === "plugin",
+  );
   if (pluginCommandIndex === -1) return true;
 
   const subcommand = commandPath[pluginCommandIndex + 1];

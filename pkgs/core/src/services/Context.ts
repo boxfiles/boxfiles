@@ -49,6 +49,10 @@ export const ContextFactSchema = Type.Object({
 });
 
 export const ContextSnapshotSchema = Type.Record(Type.String(), Type.Unknown());
+export const JsonValueSchema = Type.Unknown();
+export const ContextResolverSchema = Type.Unknown();
+export const ContextEntrySchema = Type.Unknown();
+export const ContextDefinitionSchema = Type.Record(Type.String(), Type.Unknown());
 
 export type FactSource = Type.Static<typeof FactSourceSchema>;
 export type FactValueKind = Type.Static<typeof FactValueKindSchema>;
@@ -58,13 +62,26 @@ export type FactKey = Type.Static<typeof FactKeySchema>;
 export type ContextFact = Type.Static<typeof ContextFactSchema>;
 export type ContextSnapshot = Readonly<Record<string, unknown>>;
 
+export type JsonPrimitive = string | number | boolean | null;
+export type JsonArray = readonly JsonValue[];
+export type JsonObject = { readonly [key: string]: JsonValue };
+export type JsonValue = JsonPrimitive | JsonArray | JsonObject;
+
+export type FactResolverContext = {
+  readonly rootDir: string;
+  readonly pluginId: string;
+  readonly facts: ContextSnapshot;
+};
+
+export type ContextResolver = (ctx: FactResolverContext) => JsonValue | Promise<JsonValue>;
+export type ContextEntry = JsonValue | ContextResolver;
+export type ContextDefinition = { readonly [key: string]: ContextEntry };
+
 export class ContextService {
   private readonly facts = new Map<FactKey, ContextFact>();
 
   constructor(initialFacts: readonly ContextFact[] = []) {
-    for (const fact of initialFacts) {
-      this.set(fact);
-    }
+    for (const fact of initialFacts) this.set(fact);
   }
 
   static create(initialFacts: readonly ContextFact[] = []): ContextService {
@@ -73,10 +90,7 @@ export class ContextService {
 
   static factKey(value: string): FactKey {
     const key = value.trim();
-    if (key.length === 0) {
-      throw new EmptyFactKeyError();
-    }
-
+    if (key.length === 0) throw new EmptyFactKeyError();
     return key as FactKey;
   }
 
@@ -105,10 +119,7 @@ export class ContextService {
   }
 
   snapshot(): ContextSnapshot {
-    const entries = [...this.facts.values()].map(
-      (fact) => [fact.key, fact.value] as const,
-    );
-    return Object.fromEntries(entries);
+    return Object.fromEntries([...this.facts.values()].map((fact) => [fact.key, fact.value] as const));
   }
 }
 

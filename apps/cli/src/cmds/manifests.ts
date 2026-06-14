@@ -1,16 +1,13 @@
 import * as path from "node:path";
 import { app } from "../app";
 import { getActiveRuntime } from "../runtime";
-import { formatCommandError } from "../common/console";
+import { formatCommandError, formatPluginReproducibilityWarnings } from "@boxfiles/diagnostics";
 import { markdownView } from "../views/markdown";
 import {
   Manifest as ManifestFile,
   RuntimeRootMismatchError,
   buildManifestPlanTree,
-  formatPluginReproducibilityWarnings,
-  readPluginReproducibilityWarnings,
   type ExecutionPlanDto,
-  type PluginReproducibilityWarning,
   type ManifestContextDto,
 } from "@boxfiles/core";
 
@@ -135,8 +132,7 @@ async function listManifestPlan(rootDir: string): Promise<void> {
       return;
     }
 
-    const warnings = await readPluginReproducibilityWarnings({ rootDir });
-    const output = renderManifestPlanOutput(plan, warnings);
+    const output = renderManifestPlanOutput(plan);
     console.log(markdownView(output));
   } catch (error) {
     process.exitCode = 1;
@@ -192,15 +188,8 @@ export function renderManifestPlan(plan: ExecutionPlanDto): string {
   return [header, "", list].join("\n");
 }
 
-
-export function renderManifestPlanOutput(
-  plan: ExecutionPlanDto,
-  warnings: readonly PluginReproducibilityWarning[],
-): string {
-  const warningSection = formatPluginReproducibilityWarnings(warnings);
-  if (warningSection.length === 0) return renderManifestPlan(plan);
-
-  return [renderManifestPlan(plan), warningSection].join("\n\n");
+export function renderManifestPlanOutput(plan: ExecutionPlanDto): string {
+  return renderManifestPlan(plan);
 }
 
 export function renderManifestList<T extends { readonly manifest: Manifest }>(

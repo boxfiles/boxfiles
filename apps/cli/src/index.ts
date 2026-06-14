@@ -2,8 +2,6 @@
 import { didYouMeanPlugin, helpPlugin, versionPlugin } from "@crustjs/plugins";
 import { app } from "./app";
 import { manifestCmd } from "./cmds/manifests";
-import { pluginCmd } from "./cmds/plugin";
-import { schemaCmd } from "./cmds/schema";
 import { boxfilesRuntimePlugin } from "./runtime";
 
 const cli = app
@@ -12,9 +10,7 @@ const cli = app
   .use(helpPlugin())
   .use(boxfilesRuntimePlugin())
   .args([{ name: "cmd", type: "string", variadic: true }])
-  .command(manifestCmd)
-  .command(pluginCmd)
-  .command(schemaCmd);
+  .command(manifestCmd);
 
 await cli.execute({ argv: normalizeGlobalFlags(process.argv.slice(2)) });
 

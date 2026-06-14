@@ -10,7 +10,7 @@ import * as path from "node:path";
 import Type from "typebox";
 import Schema from "typebox/schema";
 import { BrandedStringSchema, NonBlankStringSchema } from "../common/schema";
-import type { PluginService } from "./Plugin";
+import type { PluginRegistry } from "./Plugin";
 import type { ContextSnapshot } from "./Context";
 import type { ExecutionPlanDto } from "./Plan";
 import {
@@ -144,7 +144,7 @@ const nodeManifestFileSystem: ManifestFileSystem = {
 export class ManifestService {
   constructor(
     public readonly rootDir: string,
-    private readonly pluginService: PluginService,
+    private readonly pluginRegistry: PluginRegistry,
     private readonly fileSystem: ManifestFileSystem = nodeManifestFileSystem,
   ) {}
 
@@ -197,7 +197,7 @@ export class ManifestService {
     const { PlanService } = await import("./Plan");
     const planService = new PlanService(
       this.rootDir,
-      this.pluginService,
+      this.pluginRegistry,
       manifests,
       context,
     );
@@ -232,7 +232,7 @@ export class ManifestService {
     step: ManifestStepDto,
     index: number,
   ): ResolvedStep<unknown> {
-    const provider = this.pluginService.getActionProvider(step.uses);
+    const provider = this.pluginRegistry.getActionProvider(step.uses);
     if (!provider) {
       throw new NoProviderRegisteredError(manifest.id, step.uses);
     }
