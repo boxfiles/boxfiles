@@ -8,13 +8,23 @@ export const BoxfileConfigPluginSourceSchema = Type.Readonly(
   ]),
 );
 
-export const BoxfileConfigPluginSchema = Type.Object({
-  name: Type.Readonly(Type.String({ minLength: 1 })),
-  source: BoxfileConfigPluginSourceSchema,
-});
-
 export const BoxfileConfigPluginSchemaArray = Type.Readonly(
-  Type.Array(BoxfileConfigPluginSchema, { default: [] }),
+  Type.Array(BoxfileConfigPluginSourceSchema, {
+    default: [
+      // "npm:@boxfiles/provider-copy",
+      // "npm:@boxfiles/provider-gpu",
+      // "npm:@boxfiles/provider-link",
+      // "npm:@boxfiles/provider-network",
+      // "npm:@boxfiles/provider-run",
+      // "npm:@boxfiles/provider-ownership",
+      // "npm:@boxfiles/provider-os",
+      // "npm:@boxfiles/provider-packages",
+      // "npm:@boxfiles/provider-permissions",
+      // "npm:@boxfiles/provider-remove",
+      // "npm:@boxfiles/provider-rename",
+      // "npm:@boxfiles/provider-storage",
+    ],
+  }),
 );
 export const BoxfileConfigSettingsSchema = Type.Readonly(
   Type.Optional(
@@ -68,5 +78,4 @@ export const BoxfileConfigSchema = Type.Object(
 export type BoxfileConfigPluginSource = Type.Static<
   typeof BoxfileConfigPluginSourceSchema
 >;
-export type BoxfileConfigPlugin = Type.Static<typeof BoxfileConfigPluginSchema>;
 export type BoxfileConfig = Type.Static<typeof BoxfileConfigSchema>;

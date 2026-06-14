@@ -6,10 +6,14 @@ import { Parse } from "typebox/schema";
 
 class BoxfileConfigStore {
   provider = new Provider();
-  store: BoxfileConfig;
+  store: BoxfileConfig = { plugins: [], settings: {} };
   paths = envPaths("boxfiles", { suffix: "" });
 
   constructor() {
+    this.load();
+  }
+
+  load() {
     this.provider
       .file("user", join(this.paths.config, "config.json"))
       .file("project", join(process.cwd(), ".boxfilesrc"))
@@ -17,14 +21,21 @@ class BoxfileConfigStore {
         separator: "__",
         lowerCase: true,
         match: /^BOXFILES__/,
-        transform: (key: string) =>
-          key.replace(/^BOXFILES__/, "").replace(/__/g, "."),
+        transform: ({ key }: { key: string; value: string }) => {
+          key?.replace(/^BOXFILES__/, "").replace(/__/g, ".");
+        },
       })
-      .defaults({});
+      .defaults({ plugins: [], settings: {} });
 
-    const parsed = Parse(BoxfileConfigSchema, this.provider.get());
-
-    this.store = parsed;
+    const value = this.provider.get();
+    try {
+      this.store = Parse(BoxfileConfigSchema, {
+        plugins: value.plugins ?? [],
+        settings: value.settings ?? {},
+      });
+    } catch (error) {
+      console.error("Failed to load configuration:", value, error);
+    }
   }
 
   save() {
