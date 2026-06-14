@@ -69,6 +69,20 @@ export const ExecutionPlanSchema = Type.Object({
 
 export type ExecutionPlanDto = Type.Static<typeof ExecutionPlanSchema>;
 
+export const PlanExecutionStepResultSchema = Type.Object({
+  actionId: Type.Readonly(StepIdSchema),
+  success: Type.Readonly(Type.Boolean()),
+  message: Type.Readonly(Type.Optional(NonBlankStringSchema)),
+});
+
+export const PlanExecutionResultSchema = Type.Object({
+  success: Type.Readonly(Type.Boolean()),
+  results: Type.Readonly(Type.Array(PlanExecutionStepResultSchema)),
+});
+
+export type PlanExecutionStepResultDto = Type.Static<typeof PlanExecutionStepResultSchema>;
+export type PlanExecutionResultDto = Type.Static<typeof PlanExecutionResultSchema>;
+
 export type ManifestPlanNode = CompiledManifestDto & {
   readonly children: ManifestPlanNode[];
 };
@@ -125,6 +139,69 @@ export class PlanService {
   summarizeManifests(): readonly ManifestPlanNode[] {
     return buildManifestPlanTree(sortManifestsByDependencies(this.manifests));
   }
+}
+
+
+export class PlanExecutor {
+  constructor(
+    private readonly pluginRegistry: PluginRegistry,
+    private readonly rootDir: string,
+  ) {}
+
+  async execute(plan: ExecutionPlanDto, options: { readonly confirmUnsafe: boolean }): Promise<PlanExecutionResultDto> {
+    const results: PlanExecutionStepResultDto[] = [];
+
+    for (const action of plan.actions) {
+      if (action.safety.unsafe && !options.confirmUnsafe) {
+        results.push({ actionId: action.actionId as typeof action.actionId, success: false, message: "unsafe action requires --confirm" });
+        return { success: false, results };
+      }
+
+      const provider = this.pluginRegistry.getActionProvider(action.kind);
+      if (provider === null) {
+        results.push({ actionId: action.actionId as typeof action.actionId, success: false, message: `no provider for ${action.kind}` });
+        return { success: false, results };
+      }
+
+      const manifest = plan.manifests.find((candidate) => candidate.id === action.manifestId);
+      if (manifest === undefined) {
+        results.push({ actionId: action.actionId as typeof action.actionId, success: false, message: "missing manifest for action" });
+        return { success: false, results };
+      }
+
+      const step = manifest.steps.find((candidate) => candidate.id === action.actionId);
+      if (step === undefined) {
+        results.push({ actionId: action.actionId as typeof action.actionId, success: false, message: "missing step for action" });
+        return { success: false, results };
+      }
+
+      if (!shouldRunStep(step.when)) {
+        results.push({ actionId: action.actionId as typeof action.actionId, success: true, message: "skipped by when" });
+        continue;
+      }
+
+      const applied = await provider.apply({
+        action: step,
+        plan: action,
+        ctx: { rootDir: this.rootDir, facts: {}, manifest: manifest.manifest },
+      });
+
+      results.push({
+        actionId: action.actionId as typeof action.actionId,
+        success: applied.success,
+        message: applied.message,
+      });
+      if (!applied.success) return { success: false, results };
+    }
+
+    return { success: true, results };
+  }
+}
+
+function shouldRunStep(condition: string | undefined): boolean {
+  if (condition === undefined) return true;
+  const normalized = condition.trim().toLowerCase();
+  return normalized !== "false" && normalized !== "0" && normalized !== "off";
 }
 
 export function buildManifestPlanTree(
@@ -303,3 +380,4 @@ function toManifestId(value: string): ManifestId {
 
   return id as ManifestId;
 }
+

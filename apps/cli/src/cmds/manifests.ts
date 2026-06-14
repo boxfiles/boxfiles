@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import { app } from "../app";
 import { getActiveRuntime } from "../runtime";
-import { formatCommandError, formatPluginReproducibilityWarnings } from "@boxfiles/diagnostics";
+import { formatCommandError } from "@boxfiles/diagnostics";
 import { markdownView } from "../views/markdown";
 import {
   Manifest as ManifestFile,
