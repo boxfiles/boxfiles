@@ -12,20 +12,16 @@ import Schema from "typebox/schema";
 import { BrandedStringSchema, NonBlankStringSchema } from "../common/schema";
 import type { PluginService } from "./Plugin";
 import type { ContextSnapshot } from "./Context";
-import type { ActionPlanDto, ExecutionPlanDto } from "./Plan";
+import type { ExecutionPlanDto } from "./Plan";
 import {
   EmptyManifestIdError,
   EmptyStepIdError,
   InvalidActionConfigError,
   ManifestContentParseError,
-  ManifestDependencyAmbiguousError,
-  ManifestDependencyCycleError,
-  ManifestDependencyMissingError,
   ManifestIdDerivationError,
   ManifestSchemaValidationError,
   type TypeboxValidationErrorLike,
   NoProviderRegisteredError,
-  UnexpectedEmptyDependencyMatchError,
   UnsupportedManifestExtensionError,
 } from "../exceptions/manifest";
 
@@ -464,4 +460,3 @@ function parseManifestContent(manifestPath: string, content: string): unknown {
       throw new UnsupportedManifestExtensionError(manifestPath);
   }
 }
-

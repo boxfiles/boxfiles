@@ -1,17 +1,17 @@
 {
-  "name": "@boxfiles/core",
+  "name": "@boxfiles/config",
   "version": "0.0.1",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@boxfiles/config": "0.0.1",
+    "@crustjs/store": "*",
+    "@sinclair/typemap": "^0.10.1",
     "typebox": "^1.2.2"
   },
   "devDependencies": {
     "@types/bun": "latest",
-    "memfs": "^4.57.6",
     "typescript": "^5"
   },
   "files": [

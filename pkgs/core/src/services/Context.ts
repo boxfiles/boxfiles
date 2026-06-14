@@ -5,51 +5,47 @@
  */
 
 import Type from "typebox";
+import { BrandedStringSchema, NonBlankStringSchema } from "../common/schema";
 import {
-    BrandedStringSchema,
-    NonBlankStringSchema,
-} from "../common/schema";
-import {
-    DuplicateContextFactError,
-    EmptyFactKeyError,
-    InvalidFactCollisionPolicyError,
+  DuplicateContextFactError,
+  EmptyFactKeyError,
+  InvalidFactCollisionPolicyError,
 } from "../exceptions/context";
 
-
 export const FactSourceSchema = Type.Union([
-    Type.Literal("system"),
-    Type.Literal("user"),
-    Type.Literal("project"),
-    Type.Literal("plugin"),
+  Type.Literal("system"),
+  Type.Literal("user"),
+  Type.Literal("project"),
+  Type.Literal("plugin"),
 ]);
 
 export const FactValueKindSchema = Type.Union([
-    Type.Literal("static"),
-    Type.Literal("computed"),
+  Type.Literal("static"),
+  Type.Literal("computed"),
 ]);
 
 export const FactCollisionSchema = Type.Union([
-    Type.Literal("error"),
-    Type.Literal("override"),
-    Type.Literal("keep-first"),
+  Type.Literal("error"),
+  Type.Literal("override"),
+  Type.Literal("keep-first"),
 ]);
 
 export const FactKeySchema = BrandedStringSchema<"FactKey">();
 
 export const FactMetadataSchema = Type.Object({
-    source: Type.Readonly(FactSourceSchema),
-    pluginId: Type.Readonly(Type.Optional(NonBlankStringSchema)),
-    providerId: Type.Readonly(Type.Optional(NonBlankStringSchema)),
-    valueKind: Type.Readonly(FactValueKindSchema),
-    sensitive: Type.Readonly(Type.Boolean()),
-    collision: Type.Readonly(FactCollisionSchema),
+  source: Type.Readonly(FactSourceSchema),
+  pluginId: Type.Readonly(Type.Optional(NonBlankStringSchema)),
+  providerId: Type.Readonly(Type.Optional(NonBlankStringSchema)),
+  valueKind: Type.Readonly(FactValueKindSchema),
+  sensitive: Type.Readonly(Type.Boolean()),
+  collision: Type.Readonly(FactCollisionSchema),
 });
 
 export const ContextFactSchema = Type.Object({
-    key: Type.Readonly(FactKeySchema),
-    source: Type.Readonly(FactSourceSchema),
-    value: Type.Readonly(Type.Unknown()),
-    metadata: Type.Readonly(FactMetadataSchema),
+  key: Type.Readonly(FactKeySchema),
+  source: Type.Readonly(FactSourceSchema),
+  value: Type.Readonly(Type.Unknown()),
+  metadata: Type.Readonly(FactMetadataSchema),
 });
 
 export const ContextSnapshotSchema = Type.Record(Type.String(), Type.Unknown());
@@ -63,59 +59,59 @@ export type ContextFact = Type.Static<typeof ContextFactSchema>;
 export type ContextSnapshot = Readonly<Record<string, unknown>>;
 
 export class ContextService {
-    private readonly facts = new Map<FactKey, ContextFact>();
+  private readonly facts = new Map<FactKey, ContextFact>();
 
-    constructor(initialFacts: readonly ContextFact[] = []) {
-        for (const fact of initialFacts) {
-            this.set(fact);
-        }
+  constructor(initialFacts: readonly ContextFact[] = []) {
+    for (const fact of initialFacts) {
+      this.set(fact);
+    }
+  }
+
+  static create(initialFacts: readonly ContextFact[] = []): ContextService {
+    return new ContextService(initialFacts);
+  }
+
+  static factKey(value: string): FactKey {
+    const key = value.trim();
+    if (key.length === 0) {
+      throw new EmptyFactKeyError();
     }
 
-    static create(initialFacts: readonly ContextFact[] = []): ContextService {
-        return new ContextService(initialFacts);
+    return key as FactKey;
+  }
+
+  set(fact: ContextFact): void {
+    const existing = this.facts.get(fact.key);
+    if (!existing) {
+      this.facts.set(fact.key, fact);
+      return;
     }
 
-    static factKey(value: string): FactKey {
-        const key = value.trim();
-        if (key.length === 0) {
-            throw new EmptyFactKeyError();
-        }
-
-        return key as FactKey;
+    switch (fact.metadata.collision) {
+      case "error":
+        throw new DuplicateContextFactError(fact.key);
+      case "keep-first":
+        return;
+      case "override":
+        this.facts.set(fact.key, fact);
+        return;
+      default:
+        assertNever(fact.metadata.collision);
     }
+  }
 
-    set(fact: ContextFact): void {
-        const existing = this.facts.get(fact.key);
-        if (!existing) {
-            this.facts.set(fact.key, fact);
-            return;
-        }
+  get(key: FactKey): ContextFact | null {
+    return this.facts.get(key) ?? null;
+  }
 
-        switch (fact.metadata.collision) {
-            case "error":
-                throw new DuplicateContextFactError(fact.key);
-            case "keep-first":
-                return;
-            case "override":
-                this.facts.set(fact.key, fact);
-                return;
-            default:
-                assertNever(fact.metadata.collision);
-        }
-    }
-
-    get(key: FactKey): ContextFact | null {
-        return this.facts.get(key) ?? null;
-    }
-
-    snapshot(): ContextSnapshot {
-        const entries = [...this.facts.values()].map(
-            (fact) => [fact.key, fact.value] as const,
-        );
-        return Object.fromEntries(entries);
-    }
+  snapshot(): ContextSnapshot {
+    const entries = [...this.facts.values()].map(
+      (fact) => [fact.key, fact.value] as const,
+    );
+    return Object.fromEntries(entries);
+  }
 }
 
 function assertNever(value: never): never {
-    throw new InvalidFactCollisionPolicyError(String(value));
+  throw new InvalidFactCollisionPolicyError(String(value));
 }

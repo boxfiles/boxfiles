@@ -1,0 +1,29 @@
+---
+$schema: "file://../../.moon/cache/schemas/project.json"
+
+language: typescript
+layer: library
+
+tags:
+  - npm-publish
+
+toolchains:
+  default: ["javascript", "bun"]
+
+tasks:
+  lint:
+    command: "bunx tsc --noEmit"
+
+  typecheck:
+    command: "bunx tsc --noEmit"
+
+  build:
+    command: "bunx tsc --noEmit"
+
+  publish:
+    deps:
+      - "~:npm-publish"
+    command: noop
+
+  test:
+    command: "bun test"

@@ -1,23 +1,12 @@
-// install.ts
-//
-// Orchestrates the plugin install transaction. Remote sources are fetched into
-// the plugin cache before `.boxfilesrc` changes, so a recorded npm/git plugin
-// always points at an artifact the loader can consume later. File sources skip
-// caching and are only resolved enough to prove the local path is usable.
-//
-// If `.boxfilesrc` cannot be written after cache population, the error includes
-// the populated cache path because manual repair may be needed to remove stale
-// cache state.
-
 import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
+import { BoxfileConfigSchema, boxfileConfigStore } from "@boxfiles/config";
 import { BoxfilesRcParseError, BoxfilesRcReadError, BoxfilesRcValidationError } from "../../exceptions/config";
-import { readBoxfilesRcConfig } from "../Config";
 import { resolveFilePluginSource } from "./transports/file";
 import { installGitPluginSource } from "./transports/git";
 import { installNpmPluginSource } from "./transports/npm";
 import { getPluginCacheEntry, type PluginCacheRootOptions } from "./cache";
-import { assertPluginDeclarationId, configDtoToWritablePluginConfig, isPlainObject, upsertPluginDeclarationInConfig } from "./configDeclarations";
+import { assertPluginDeclarationId } from "./configDeclarations";
 import { parsePluginSource, type FilePluginSource, type GitPluginSource, type NpmPluginSource, type ParsedPluginSource } from "./source";
 import { pluginReproducibilityWarning, type PluginReproducibilityWarning } from "./warnings";
 
@@ -69,23 +58,14 @@ export async function installPluginDeclaration(
   const source = parsePluginSource(sourceText);
   const configPath = join(options.rootDir, ".boxfilesrc");
   const fs = options.fs ?? nodeFileSystem;
-  const config = await readExistingConfig(configPath, fs);
+  await readExistingConfig(configPath, fs);
 
-  // Mutation order matters: validate/fetch the artifact first, then record the
-  // declaration. Reversing this can leave `.boxfilesrc` pointing at a plugin
-  // cache entry that was never populated.
   await validateAndPopulateCache(source, configPath, options);
-  await writePluginDeclarationWithDiagnostics(configPath, id, sourceText, source, config, fs, options.cache);
+  await writePluginDeclarationWithDiagnostics(configPath, id, sourceText, source, options.cache);
 
   return { id, source: sourceText, kind: source.kind, configPath, warning: pluginReproducibilityWarning(id, sourceText) };
 }
 
-/**
- * Populates cache state required by future planning/loading without mutating
- * project files. npm/git sources materialize into cache; file sources only
- * resolve against the config path because local plugin paths are intentionally
- * never copied into cache.
- */
 async function validateAndPopulateCache(
   source: ParsedPluginSource,
   configPath: string,
@@ -121,22 +101,18 @@ async function defaultResolveFile(
   return await resolveFilePluginSource(source, options);
 }
 
-/**
- * Writes `.boxfilesrc` after cache population and turns late write failures
- * into repairable diagnostics. At this point remote plugin bytes may already
- * exist on disk, so the caller needs the cache path, not a generic JSON error.
- */
 async function writePluginDeclarationWithDiagnostics(
   configPath: string,
   id: string,
   sourceText: string,
   source: ParsedPluginSource,
-  config: Readonly<Record<string, unknown>>,
-  fs: PluginInstallFileSystem,
   cacheOptions: PluginCacheRootOptions | undefined,
 ): Promise<void> {
   try {
-    await upsertPluginDeclarationInConfig(configPath, id, sourceText, config, fs);
+    await boxfileConfigStore.update((current) => ({
+      ...current,
+      plugins: [...current.plugins.filter((plugin) => plugin.name !== id), { name: id, source: sourceText }],
+    }));
   } catch (error) {
     const cacheEntry = getPluginCacheEntry(source, cacheOptions);
     if (cacheEntry === null) throw error;
@@ -146,27 +122,26 @@ async function writePluginDeclarationWithDiagnostics(
   }
 }
 
-
 async function readExistingConfig(
   configPath: string,
   fs: PluginInstallFileSystem,
-): Promise<Readonly<Record<string, unknown>>> {
+): Promise<void> {
   try {
-    return configDtoToWritablePluginConfig(await readBoxfilesRcConfig(configPath, { fs }));
+    const text = await fs.readFile(configPath, "utf8");
+    const raw = JSON.parse(text) as unknown;
+    BoxfileConfigSchema.parse(raw);
   } catch (error) {
-    if (error instanceof BoxfilesRcParseError) {
-      throw new PluginInstallError(`Unable to parse .boxfilesrc as JSON: ${formatUnknownError(error.cause)}`);
+    if (error instanceof SyntaxError) {
+      throw new PluginInstallError(`Unable to parse .boxfilesrc as JSON: ${error.message}`);
     }
 
-    if (error instanceof BoxfilesRcReadError) {
-      throw error.cause;
+    if (error instanceof Error && (error as { readonly cause?: unknown }).cause instanceof Error) {
+      throw new PluginInstallError(`Unable to read .boxfilesrc: ${(error as { readonly cause: Error }).cause.message}`);
     }
 
-    if (error instanceof BoxfilesRcValidationError && !isPlainObject(error.value)) {
-      throw new PluginInstallError(".boxfilesrc must contain a JSON object.");
+    if (error instanceof Error) {
+      throw error;
     }
-
-    throw error;
   }
 }
 

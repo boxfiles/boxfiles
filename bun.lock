@@ -39,10 +39,24 @@
       "name": "@boxfiles/docs",
       "version": "0.0.1",
     },
+    "pkgs/config": {
+      "name": "@boxfiles/config",
+      "version": "0.0.1",
+      "dependencies": {
+        "@crustjs/store": "*",
+        "@sinclair/typemap": "^0.10.1",
+        "typebox": "^1.2.2",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "typescript": "^5",
+      },
+    },
     "pkgs/core": {
       "name": "@boxfiles/core",
       "version": "0.0.1",
       "dependencies": {
+        "@boxfiles/config": "0.0.1",
         "typebox": "^1.2.2",
       },
       "devDependencies": {
@@ -214,6 +228,8 @@
 
     "@boxfiles/cli": ["@boxfiles/cli@workspace:apps/cli"],
 
+    "@boxfiles/config": ["@boxfiles/config@workspace:pkgs/config"],
+
     "@boxfiles/core": ["@boxfiles/core@workspace:pkgs/core"],
 
     "@boxfiles/docs": ["@boxfiles/docs@workspace:apps/docs"],
@@ -247,6 +263,8 @@
     "@crustjs/core": ["@crustjs/core@0.0.19", "", { "dependencies": { "@crustjs/utils": "0.0.3" }, "peerDependencies": { "typescript": "^6.0.3" } }, "sha512-RV/1TDJ+RZ9DFSbIHXPIyZV7bvJjf9RaElly2BvNGor1HxuEfiu6BdR8SBWzAa+PyvXQk2hkXuSjmaNIE+jbCQ=="],
 
     "@crustjs/plugins": ["@crustjs/plugins@0.1.2", "", { "dependencies": { "@crustjs/style": "0.2.0" }, "peerDependencies": { "@crustjs/core": "0.0.19", "typescript": "^6.0.3" } }, "sha512-sX9eaN1c30T2PEel6RZZpSfBp/vOAWoIAV2/a+mbi7OxvLBLMJy3+WGxx5OlTDCXe/MJ6c8KWLIzFY2Cg71idA=="],
+
+    "@crustjs/store": ["@crustjs/store@0.2.0", "", { "dependencies": { "@crustjs/utils": "0.0.3", "@standard-schema/spec": "^1.1.0" }, "peerDependencies": { "typescript": "^6.0.3" } }, "sha512-RqrAK5OqRQBSrXGQUIO8GMZATLMhAnodm0IcxdmfJ6ukgGYjE9vJFqK6o4I6psX7sntwmz19D5dBrYw9wr/eSA=="],
 
     "@crustjs/style": ["@crustjs/style@0.2.0", "", { "peerDependencies": { "typescript": "^6.0.3" } }, "sha512-WPJ/l630OSb9aaZEVpZhs8myBf6ItlXivABnx3jzyl4SUYr0Ztrky6D2Xw+rRUp7i7m26KsJHkvi7YiOmsr0BQ=="],
 
@@ -311,6 +329,12 @@
     "@moonrepo/core-windows-x64-msvc": ["@moonrepo/core-windows-x64-msvc@2.3.2", "", { "os": "win32", "cpu": "x64" }, "sha512-T8u5nBgLD4oYL6NDpaoNmxXoXSawD1us1NQnmbYNbND4iSanm3sXf/vUXNz50DTONB5AARGG0HKs9sYuOSSNAQ=="],
 
     "@nodable/entities": ["@nodable/entities@2.2.0", "", {}, "sha512-9uGyhaQavEUMC8AIddIjau4NsnsXhou+j5sBAGojCM1oxmQpVKTWR/9JxABD6UAv12vpIms55fPZKFQEhG6uBg=="],
+
+    "@sinclair/typebox": ["@sinclair/typebox@0.34.49", "", {}, "sha512-brySQQs7Jtn0joV8Xh9ZV/hZb9Ozb0pmazDIASBkYKCjXrXU3mpcFahmK/z4YDhGkQvP9mWJbVyahdtU5wQA+A=="],
+
+    "@sinclair/typemap": ["@sinclair/typemap@0.10.1", "", { "peerDependencies": { "@sinclair/typebox": "^0.34.30", "valibot": "^1.0.0", "zod": "^3.24.1" } }, "sha512-UXR0fhu/n3c9B6lB+SLI5t1eVpt9i9CdDrp2TajRe3LbKiUhCTZN2kSfJhjPnpc3I59jMRIhgew7+0HlMi08mg=="],
+
+    "@standard-schema/spec": ["@standard-schema/spec@1.1.0", "", {}, "sha512-l2aFy5jALhniG5HgqrD6jXLi/rUWrKvqN/qJx6yoJsgKhblVd+iqqU4RCXavm/jPityDo5TCvKMnpjKnOriy0w=="],
 
     "@tokenizer/inflate": ["@tokenizer/inflate@0.4.1", "", { "dependencies": { "debug": "^4.4.3", "token-types": "^6.1.1" } }, "sha512-2mAv+8pkG6GIZiF1kNg1jAjh27IDxEPKwdGul3snfztFerfPGI1LjDezZp3i7BElXompqEtPmoPx6c2wgtWsOA=="],
 
@@ -468,11 +492,15 @@
 
     "util-deprecate": ["util-deprecate@1.0.2", "", {}, "sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw=="],
 
+    "valibot": ["valibot@1.4.1", "", { "peerDependencies": { "typescript": ">=5" }, "optionalPeers": ["typescript"] }, "sha512-klCmFTz2jeDluy9RwX+F884TCiogtdBJ/YaxSx1EOBYXa3NXNWj8kR1jjN8rzluwojJVWWaHJ4r1U5LfICnM3g=="],
+
     "wrappy": ["wrappy@1.0.2", "", {}, "sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ=="],
 
     "xml-naming": ["xml-naming@0.1.0", "", {}, "sha512-k8KO9hrMyNk6tUWqUfkTEZbezRRpONVOzUTnc97VnCvyj6Tf9lyUR9EDAIeiVLv56jsMcoXEwjW8Kv5yPY52lw=="],
 
     "yaml": ["yaml@2.9.0", "", { "bin": { "yaml": "bin.mjs" } }, "sha512-2AvhNX3mb8zd6Zy7INTtSpl1F15HW6Wnqj0srWlkKLcpYl/gMIMJiyuGq2KeI2YFxUPjdlB+3Lc10seMLtL4cA=="],
+
+    "zod": ["zod@3.25.76", "", {}, "sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ=="],
 
     "@jsonjoy.com/fs-snapshot/@jsonjoy.com/json-pack": ["@jsonjoy.com/json-pack@17.67.0", "", { "dependencies": { "@jsonjoy.com/base64": "17.67.0", "@jsonjoy.com/buffers": "17.67.0", "@jsonjoy.com/codegen": "17.67.0", "@jsonjoy.com/json-pointer": "17.67.0", "@jsonjoy.com/util": "17.67.0", "hyperdyperid": "^1.2.0", "thingies": "^2.5.0", "tree-dump": "^1.1.0" }, "peerDependencies": { "tslib": "2" } }, "sha512-t0ejURcGaZsn1ClbJ/3kFqSOjlryd92eQY465IYrezsXmPcfHPE/av4twRSxf6WE+TkZgLY+71vCZbiIiFKA/w=="],
 
