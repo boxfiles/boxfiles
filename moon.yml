@@ -12,6 +12,9 @@ tasks:
     command: "moon run :typecheck --affected"
 
   demoe2e:
+    inputs:
+      - "src/demo/e2e/**"
+      - "Containerfile"
     script: |
       set -euo pipefail
       podman build -t boxfiles-demo-e2e -f Containerfile .
