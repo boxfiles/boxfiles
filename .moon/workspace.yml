@@ -2,7 +2,6 @@
 projects:
   sources:
     repo: "./"
-    agents: ".agents/"
   globs:
     - "apps/*"
     - "pkgs/*"

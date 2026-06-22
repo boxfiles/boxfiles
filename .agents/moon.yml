@@ -1,9 +1,0 @@
----
-$schema: "file://../.moon/cache/schemas/project.json"
-
-language: bash
-layer: configuration
-
-tasks:
-  setup:
-    command: ".moon/task/setup.sh"
