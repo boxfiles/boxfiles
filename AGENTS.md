@@ -65,6 +65,14 @@ When reading/writing project plans, design notes, and long-lived decisions use `
 - Add or update tests when behavior becomes non-trivial.
 - Validate with observable output: typecheck, tests, or focused command execution.
 
+## Refactoring
+
+- MUST NOT use package barrel exports to hide ownership. Import from the package that owns the symbol.
+- MUST NOT make `@boxfiles/core` re-export sibling packages as convenience API.
+- SHOULD remove pass-through exports during package moves unless compatibility is explicitly required.
+- SHOULD update callers to direct imports before deleting or moving modules.
+- MUST verify dependency direction after refactors: feature packages may depend on core; core MUST NOT become a dumping ground for unrelated package APIs.
+
 ## TypeScript rules
 
 - `strict` mode is enabled. Treat type errors as blockers.

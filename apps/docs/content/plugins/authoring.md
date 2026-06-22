@@ -36,9 +36,11 @@ See [Plugin installer](../plugin-installer.md) for `.boxfilesrc` declarations, `
 
 ## Defining a plugin
 
-Use `createPlugin()` from `src/services/Plugins.ts`.
+Use `createPlugin()` from `@boxfiles/plugin`.
 
 ```ts
+import { createPlugin } from '@boxfiles/plugin`;
+
 export default createPlugin({
     id: "example",
     context: {
