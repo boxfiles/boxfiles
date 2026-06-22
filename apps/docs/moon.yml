@@ -1,2 +1,42 @@
 ---
 $schema: "file://../../.moon/cache/schemas/project.json"
+
+language: typescript
+layer: application
+
+toolchains:
+  default: ["javascript", "bun"]
+
+tasks:
+  dev:
+    command: "bun run dev"
+    options:
+      runInCI: false
+
+  build:
+    command: "bun run build"
+    inputs:
+      - "content/**/*"
+      - "package.json"
+      - "press.config.tsx"
+      - "source.config.ts"
+      - "tsconfig.json"
+      - "waku.config.ts"
+    outputs:
+      - "dist"
+
+  typecheck:
+    command: "bun run typecheck"
+    inputs:
+      - "package.json"
+      - "press.config.tsx"
+      - "source.config.ts"
+      - "tsconfig.json"
+      - "waku.config.ts"
+
+  test:
+    command: "bun test"
+
+  publish:
+    script: |
+      # TODO: build and push to gh-pages branch

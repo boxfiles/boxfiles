@@ -4,6 +4,8 @@
 
 Boxfiles is a Bun + TypeScript CLI/GUI for workstation provisioning: low-ceremony Ansible-lite with manifests/modules, context facts, plan compilation, and plan execution.
 
+Also read and respect any AGENTS.md found in any pkgs/apps dir.
+
 ## Runtime and tooling
 
 - Use **Bun** for package management and execution.

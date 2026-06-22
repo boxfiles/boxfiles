@@ -11,6 +11,9 @@ tasks:
   typecheck:
     command: "moon run :typecheck --affected"
 
+  playwright:
+    command: playwright-cli
+
   demoe2e:
     inputs:
       - "src/demo/e2e/**"

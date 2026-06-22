@@ -1,5 +1,5 @@
 ---
-title: Plugin installer
+title: Installing
 description: Declare, install, remove, cache, and troubleshoot Boxfiles plugins.
 status: draft
 category: guide
