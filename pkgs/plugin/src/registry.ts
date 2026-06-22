@@ -1,10 +1,10 @@
 import type Type from "typebox";
+import type { ActionProvider } from "@boxfiles/core";
 import {
     ActionProviderAlreadyRegisteredError,
     PluginAlreadyRegisteredError,
-} from "../../exceptions/plugins";
+} from "./errors";
 import { normalizePluginModule } from "./schema";
-import type { ActionProvider } from "../Actions";
 import type { BoxfilePlugin, PluginSummaryDto } from "./plugin";
 
 export class PluginRegistry {
@@ -17,7 +17,7 @@ export class PluginRegistry {
 
         this.pluginRegistry.set(plugin["id"], plugin);
         this.pluginSources.set(plugin["id"], source);
-        for (const provider of Object.values(plugin["actions"] ?? {})) this.registerActionProvider(plugin["id"], provider);
+        for (const provider of Object.values(plugin["actions"] ?? {})) this.registerActionProvider(provider);
     }
 
     registerModule(moduleValue: unknown): BoxfilePlugin {
@@ -43,7 +43,7 @@ export class PluginRegistry {
             .sort((left, right) => left.id.localeCompare(right.id));
     }
 
-    private registerActionProvider(pluginId: string, provider: ActionProvider<Type.TSchema>): void {
+    private registerActionProvider(provider: ActionProvider<Type.TSchema>): void {
         if (this.actionProviders.has(provider.kind)) throw new ActionProviderAlreadyRegisteredError(provider.kind);
         this.actionProviders.set(provider.kind, provider);
     }

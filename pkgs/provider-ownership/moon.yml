@@ -2,6 +2,7 @@
 $schema: "file://../../.moon/cache/schemas/project.json"
 dependsOn:
   - core
+  - plugin
 
 language: typescript
 layer: library

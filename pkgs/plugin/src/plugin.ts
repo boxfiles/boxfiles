@@ -1,7 +1,6 @@
-import type { ContextDefinition } from "../Context";
-import type { ActionProviderMap } from "../Actions";
+import type { ActionProviderMap, ContextDefinition } from "@boxfiles/core";
 
-export type { ContextDefinition, ContextResolver, ContextEntry, FactResolverContext, JsonValue } from "../Context";
+export type { ContextDefinition, ContextResolver, ContextEntry, FactResolverContext, JsonValue } from "@boxfiles/core";
 
 export type BoxfilePlugin<
     TContext extends ContextDefinition = ContextDefinition,

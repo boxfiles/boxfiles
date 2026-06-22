@@ -1,4 +1,4 @@
-import { createPlugin } from "@boxfiles/core";
+import { createPlugin } from "@boxfiles/plugin";
 
 export default createPlugin({
     id: "os",

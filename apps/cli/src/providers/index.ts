@@ -11,7 +11,7 @@ import run from "@boxfiles/provider-run";
 import rename from "@boxfiles/provider-rename";
 import storage from "@boxfiles/provider-storage";
 import user from "@boxfiles/provider-user";
-import type { BoxfilePlugin } from "@boxfiles/core";
+import type { BoxfilePlugin } from "@boxfiles/plugin";
 
 export const builtInPlugins: readonly BoxfilePlugin[] = [
   copy,

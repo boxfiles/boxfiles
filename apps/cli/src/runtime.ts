@@ -1,9 +1,9 @@
 import type { CrustPlugin } from "@crustjs/core";
 import {
   ManifestService,
-  PluginRegistry,
   RuntimeNotActiveError,
-} from "@boxfiles/core";
+  } from "@boxfiles/core";
+import { PluginRegistry } from "@boxfiles/plugin";
 import { builtInPlugins } from "./providers";
 
 const RUNTIME_STATE_KEY = "boxfiles.runtime";

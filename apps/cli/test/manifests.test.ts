@@ -4,7 +4,7 @@ import {
   renderManifestPlan,
   renderManifestPlanOutput,
 } from "../src/cmds/manifests";
-import { pluginReproducibilityWarning } from "@boxfiles/core";
+import { pluginReproducibilityWarning } from "@boxfiles/diagnostics";
 import type {
   ActionKind,
   CompiledManifestDto,

@@ -23,7 +23,7 @@ import {
   type CompiledManifestDto,
   type ManifestId,
 } from "./Manifest";
-import type { PluginRegistry } from "./Plugin";
+import type { ActionProviderRegistry } from "./Actions";
 
 export const ActionSafetySchema = Type.Object({
   idempotent: Type.Readonly(Type.Boolean()),
@@ -95,12 +95,12 @@ export type ManifestPlanNode = CompiledManifestDto & {
 export class PlanService {
   public readonly manifests: readonly CompiledManifestDto[];
   public readonly context: ContextSnapshot;
-  private readonly pluginRegistry: PluginRegistry;
+  private readonly pluginRegistry: ActionProviderRegistry;
   private readonly rootDir: string;
 
   constructor(
     rootDir: string,
-    pluginRegistry: PluginRegistry,
+    pluginRegistry: ActionProviderRegistry,
     manifests: readonly CompiledManifestDto[],
     context: ContextSnapshot,
   ) {
@@ -149,7 +149,7 @@ export class PlanService {
 
 export class PlanExecutor {
   constructor(
-    private readonly pluginRegistry: PluginRegistry,
+    private readonly pluginRegistry: ActionProviderRegistry,
     private readonly rootDir: string,
   ) {}
 

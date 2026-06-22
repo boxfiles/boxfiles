@@ -1,7 +1,7 @@
 import Type from "typebox";
 import Schema from "typebox/schema";
-import { PluginModuleShapeError } from "../../exceptions/plugins";
-import { ContextDefinitionSchema } from "../Context";
+import { ContextDefinitionSchema } from "@boxfiles/core";
+import { PluginModuleShapeError } from "./errors";
 import type { BoxfilePlugin } from "./plugin";
 
 export type PluginModule = { readonly default?: unknown };

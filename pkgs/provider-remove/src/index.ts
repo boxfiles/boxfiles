@@ -1,10 +1,8 @@
 import Type from "typebox";
 import Schema from "typebox/schema";
 import { NonBlankStringSchema } from "@boxfiles/core";
-import {
-    type ActionProvider,
-    createPlugin,
-} from "@boxfiles/core";
+import { type ActionProvider } from "@boxfiles/core";
+import { createPlugin } from "@boxfiles/plugin";
 
 const RemoveConfigSchema = Type.Object({
     path: Type.Readonly(NonBlankStringSchema),

@@ -2,7 +2,8 @@ import Type from "typebox";
 import Schema from "typebox/schema";
 import { Bash, ReadWriteFs } from "just-bash";
 import { NonBlankStringSchema } from "@boxfiles/core";
-import { type ActionProvider, createPlugin } from "@boxfiles/core";
+import { type ActionProvider } from "@boxfiles/core";
+import { createPlugin } from "@boxfiles/plugin";
 
 const RunConfigSchema = Type.Object({
   command: Type.Readonly(NonBlankStringSchema),

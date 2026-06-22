@@ -104,3 +104,7 @@ export interface ActionProvider<
 export type ActionProviderMap = {
     readonly [kind: string]: ActionProvider;
 };
+
+export type ActionProviderRegistry = {
+    readonly getActionProvider: (kind: string) => ActionProvider<Type.TSchema> | null;
+};

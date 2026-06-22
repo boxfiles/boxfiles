@@ -10,7 +10,7 @@ import * as path from "node:path";
 import Type from "typebox";
 import Schema from "typebox/schema";
 import { BrandedStringSchema, NonBlankStringSchema } from "../common/schema";
-import type { PluginRegistry } from "./Plugin";
+import type { ActionProviderRegistry } from "./Actions";
 import type { ContextSnapshot } from "./Context";
 import type { ExecutionPlanDto } from "./Plan";
 import {
@@ -144,7 +144,7 @@ const nodeManifestFileSystem: ManifestFileSystem = {
 export class ManifestService {
   constructor(
     public readonly rootDir: string,
-    private readonly pluginRegistry: PluginRegistry,
+    private readonly pluginRegistry: ActionProviderRegistry,
     private readonly fileSystem: ManifestFileSystem = nodeManifestFileSystem,
   ) {}
 

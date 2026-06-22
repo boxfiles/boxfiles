@@ -11,6 +11,7 @@
   "dependencies": {
     "@boxfiles/core": "0.0.1",
     "@boxfiles/diagnostics": "0.0.1",
+    "@boxfiles/plugin": "0.0.1",
     "@boxfiles/provider-copy": "0.0.1",
     "@boxfiles/provider-gpu": "0.0.1",
     "@boxfiles/provider-link": "0.0.1",
