@@ -1,0 +1,9 @@
+---
+$schema: "file://../.moon/cache/schemas/project.json"
+
+language: typescript
+layer: configuration
+
+tasks:
+  setup:
+    command: "bun .moon/task/setup.ts"
