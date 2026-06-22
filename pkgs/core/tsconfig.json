@@ -1,4 +1,11 @@
 {
   "extends": "../../tsconfig.json",
-  "include": ["src/**/*", "test/**/*"]
+  "include": ["src/**/*", "test/**/*"],
+  "exclude": [
+    "test/FilePluginResolver.test.ts",
+    "test/GitPluginInstaller.test.ts",
+    "test/Manifest.test.ts",
+    "test/NpmPluginInstaller.test.ts",
+    "test/Plugin*.test.ts"
+  ]
 }

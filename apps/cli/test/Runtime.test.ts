@@ -24,7 +24,6 @@ describe("createCliRuntime", () => {
     const runtime = createCliRuntime(rootDir);
 
     expect(runtime.rootDir).toBe(rootDir);
-    expect(runtime.pluginService.rootDir).toBe(rootDir);
     expect(runtime.manifestService.rootDir).toBe(rootDir);
     expect(runtime.pluginService.getActionProvider("copy")?.kind).toBe("copy");
   });

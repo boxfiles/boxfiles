@@ -1,4 +1,3 @@
-import { IsValidationError } from "typebox/error";
 import type { TValidationError } from "typebox/error";
 import { ManifestCompileError } from "./compile";
 import { ManifestDiscoveryError } from "./discovery";
@@ -156,28 +155,4 @@ export class UnexpectedEmptyDependencyMatchError extends ManifestCompileError {
   }
 }
 
-function extractTypeboxError(
-  error: unknown,
-): TypeboxValidationErrorLike | null {
-  if (!isTypeboxErrorLike(error)) return null;
 
-  return error;
-}
-
-function isTypeboxErrorLike(
-  error: unknown,
-): error is TypeboxValidationErrorLike {
-  if (!isRecord(error)) return false;
-  if (!("schema" in error)) return false;
-  if (!("value" in error)) return false;
-  if (!("errors" in error)) return false;
-
-  const errors = (error as { readonly errors: unknown }).errors;
-  return (
-    Array.isArray(errors) && errors.every((item) => IsValidationError(item))
-  );
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}

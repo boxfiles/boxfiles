@@ -1,10 +1,10 @@
 import { describe, expect, test } from "bun:test";
-import { PlanExecutor, type ExecutionPlanDto, type ManifestId, type PluginRegistry, type StepId } from "@boxfiles/core";
+import { PlanExecutor, type ExecutionPlanDto, type ManifestId, type ActionKind, type ActionProviderRegistry, type StepId } from "@boxfiles/core";
 
 describe("PlanExecutor", () => {
   test("stops on first failure", async () => {
     const calls: string[] = [];
-    const registry: PluginRegistry = {
+    const registry: ActionProviderRegistry = {
       getActionProvider(kind) {
         if (kind === "ok") {
           return {
@@ -54,14 +54,14 @@ function createPlan(): ExecutionPlanDto {
         manifest: { id: "m" as ManifestId, path: "m.toml", dir: ".", filesDir: "files" },
         dependsOn: [],
         steps: [
-          { id: "m.1" as StepId, manifestId: "m" as ManifestId, uses: "ok", config: {} },
-          { id: "m.2" as StepId, manifestId: "m" as ManifestId, uses: "fail", config: {} },
+          { id: "m.1" as StepId, manifestId: "m" as ManifestId, uses: "ok" as ActionKind, config: {} },
+          { id: "m.2" as StepId, manifestId: "m" as ManifestId, uses: "fail" as ActionKind, config: {} },
         ],
       },
     ],
     actions: [
-      { actionId: "m.1" as StepId, manifestId: "m" as ManifestId, kind: "ok", summary: "ok", safety: { idempotent: true, unsafe: false }, changes: [] },
-      { actionId: "m.2" as StepId, manifestId: "m" as ManifestId, kind: "fail", summary: "fail", safety: { idempotent: false, unsafe: true }, changes: [] },
+      { actionId: "m.1" as StepId, manifestId: "m" as ManifestId, kind: "ok" as ActionKind, summary: "ok", safety: { idempotent: true, unsafe: false }, changes: [] },
+      { actionId: "m.2" as StepId, manifestId: "m" as ManifestId, kind: "fail" as ActionKind, summary: "fail", safety: { idempotent: false, unsafe: true }, changes: [] },
     ],
   };
 }

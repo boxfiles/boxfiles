@@ -66,7 +66,7 @@ export function prettyPrintTypeboxErrors(error: TypeboxError): string {
 }
 
 function isTypeboxLikeError(error: unknown): error is TypeboxError {
-  return isRecord(error) && Array.isArray(error.errors);
+  return isRecord(error) && Array.isArray(error["errors"]);
 }
 
 export function formatPluginReproducibilityWarnings(
