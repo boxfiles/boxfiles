@@ -23,7 +23,7 @@ tasks:
       - "tsconfig.json"
       - "waku.config.ts"
     outputs:
-      - "dist"
+      - "dist/public"
 
   typecheck:
     command: "bun run typecheck"
@@ -37,6 +37,12 @@ tasks:
   test:
     command: "bun test"
 
+  serve:
+    dependsOn: ["build"]
+    command: "bunx serve ./dist/public"
+    options:
+      runInCI: false
+      
   publish:
     script: |
       # TODO: build and push to gh-pages branch

@@ -1,6 +1,8 @@
 ---
 $schema: "file://../.moon/cache/schemas/project.json"
 
+id: agents
+
 language: typescript
 layer: configuration
 

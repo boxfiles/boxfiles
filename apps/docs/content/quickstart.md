@@ -25,9 +25,7 @@ mkdir -p modules/files
 
 ## 2. Create a manifest
 
-Boxfiles discovers `.yaml`, `.yml`, and `.toml` manifests below the selected root. Put manifests in manifest directories. Copy sources come from a `files/` directory next to the current manifest, so manifest authors reference `gitconfig`, not `./files/gitconfig`.
-
-Hidden `.boxfilesrc.{json,yaml,yml,toml}` files are config files, not manifests. Boxfiles ignores them anywhere in the tree.
+> Boxfiles discovers all `.yaml`, `.yml`, and `.toml` files (not inside a `files` dir), considering them to be boxfile manifests.
 
 Create `modules/git.yaml`:
 
@@ -41,10 +39,12 @@ steps:
       overwrite: false
 ```
 
-Create the source file:
+Create `modules/files/gitconfig`:
 
-```sh
-printf '[user]\n    name = Example\n' > modules/files/gitconfig
+```ini
+[user]
+name = Example
+email = ex@mp.le
 ```
 
 See [`copy` built-in plugin docs](/builtin/copy) for source path rules and planning behavior.
@@ -77,7 +77,8 @@ Manifest IDs are derived from manifest paths relative to the selected root. The 
 
 ```text
 base/foundation.toml -> base.foundation
-demo/base/foundation.toml -> demo.base.foundation
+demo/base/foundation.yaml -> demo.base.foundation
+some/deeply/nested/manifest.yml -> some.deeply.nested.manifest
 ```
 
 `dependsOn` accepts full manifest IDs or shorter IDs that resolve through enclosing namespaces.
@@ -87,7 +88,8 @@ dependsOn:
   - base.foundation
 ```
 
-Dependency resolution succeeds only when the dependency token maps to one unique manifest. If multiple unique manifests match, Boxfiles fails and requires the full manifest ID.
+Dependency resolution succeeds only when the dependency token maps to one unique manifest. 
+If multiple unique manifests match, Boxfiles fails and requires the full manifest ID.
 
 ## 5. Plan or apply
 
@@ -101,4 +103,10 @@ Apply a manifest when ready:
 
 ```sh
 boxfiles apply modules.git
+```
+
+or apply all discovered manifests:
+
+```sh
+boxfiles apply
 ```

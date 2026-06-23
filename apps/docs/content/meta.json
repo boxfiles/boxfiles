@@ -1,15 +1,10 @@
 {
   "pages": [
-    "index",
+    "why",
     "quickstart",
     "---Plugins---",
     "plugins/authoring",
     "plugins/installing",
-    "---Builtin---",
-    "!config",
-    "!core",
-    "!diagnostics",
-    "!plugins",
-    "..."
+    ".../plugins"
   ]
 }

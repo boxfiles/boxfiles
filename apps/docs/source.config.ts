@@ -1,7 +1,6 @@
 
 import { defineDocs } from "fumadocs-mdx/config";
 import { metaSchema, pageSchema } from "fumapress/adapters/mdx/schema";
-import { createHomeLayoutPage } from "fumapress/layouts/home";
 
 // the config file for Fumadocs MDX, see https://fumadocs.dev/docs/mdx
 export const docs = defineDocs({
