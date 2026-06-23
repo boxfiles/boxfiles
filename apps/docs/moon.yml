@@ -42,7 +42,9 @@ tasks:
     command: "bunx serve ./dist/public"
     options:
       runInCI: false
-      
+
   publish:
-    script: |
-      # TODO: build and push to gh-pages branch
+    dependsOn: ["build"]
+    options:
+      cache: false
+    command: "bash .moon/tasks/publish"

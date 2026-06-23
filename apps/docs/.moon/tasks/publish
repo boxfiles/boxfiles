@@ -1,0 +1,44 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+branch="gh-pages"
+src="${MOON_PROJECT_ROOT}/dist/public"
+tmp="$(mktemp -d)"
+
+cleanup() {
+  git worktree remove "${tmp}" --force >/dev/null 2>&1 || rm -rf "${tmp}"
+}
+trap cleanup EXIT
+
+# Use the GitHub Actions bot identity in CI, but allow local overrides.
+git config user.name "${GIT_AUTHOR_NAME:-github-actions[bot]}"
+git config user.email "${GIT_AUTHOR_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
+
+# Fetch the Pages branch if it already exists. First publish is allowed to create it.
+git fetch origin "${branch}" || true
+
+# Check out gh-pages into a separate folder so the source checkout stays untouched.
+if git rev-parse --verify "origin/${branch}" >/dev/null 2>&1; then
+  git worktree add "${tmp}" "origin/${branch}"
+  git -C "${tmp}" switch -C "${branch}"
+else
+  git worktree add --detach "${tmp}"
+  git -C "${tmp}" switch --orphan "${branch}"
+fi
+
+# Replace everything on gh-pages with the freshly built static site.
+find "${tmp}" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+cp -R "${src}"/. "${tmp}"/
+
+# Keep GitHub Pages from running Jekyll over the generated files.
+touch "${tmp}/.nojekyll"
+
+# Commit and push only when the generated site changed.
+git -C "${tmp}" add -A
+if git -C "${tmp}" diff --cached --quiet; then
+  echo "No docs changes."
+  exit 0
+fi
+
+git -C "${tmp}" commit -m "publish docs"
+git -C "${tmp}" push origin "${branch}"
