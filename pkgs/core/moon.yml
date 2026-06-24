@@ -27,3 +27,11 @@ tasks:
 
   test:
     command: "bun test"
+
+
+  e2e:
+    script: |
+      set -euo pipefail
+      tmp="$(mktemp -d)"
+      trap 'rm -rf "$tmp"' EXIT
+      TMPDIR="$tmp" bats ./e2e/*.bats.sh
