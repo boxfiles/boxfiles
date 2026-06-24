@@ -10,7 +10,7 @@ runs:
       run: bash "${{ github.action_path }}/action.sh"
 
     - name: Set Git Identity
-      uses: .github/actions/github-bot-identity
+      uses: ./.github/actions/github-bot-identity
 
     - name: Commit and push synced changes
       shell: bash
