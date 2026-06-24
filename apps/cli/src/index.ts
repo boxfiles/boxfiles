@@ -26,6 +26,11 @@ function normalizeGlobalFlags(argv: readonly string[]): string[] {
     const token = argv[index];
     if (token === undefined) continue;
 
+    if (token === "--dry-run") {
+      remaining.push("--dryRun");
+      continue;
+    }
+
     if (token === "-d" || token === "--dir") {
       const value = argv[index + 1];
       if (value === undefined) {
