@@ -1,7 +1,6 @@
 import { ServerCodeBlock } from 'fumadocs-ui/components/codeblock.rsc';
 
 const planPreview = `
-$ git clone github.com/my/dotfiles && cd dotfiles
 $ boxfiles plan workstation.yml
 
 facts
@@ -10,12 +9,14 @@ facts
   shell.current     zsh
 
 steps
-  01 package.git       install
-  02 dotfiles.nvim     link
-  03 provider-shell    apply
+  01 base.user          link
+  02 devtools.starship  install
+  03 devtools.zshrc     link
+  04 devtools.fcegi     clone
+  05 devtools.decfa     shell
 
 result
-  3 actions planned
+  5 actions planned
   0 mutations executed`;
 
 export async function PlanPreview() {
@@ -34,3 +35,5 @@ export async function PlanPreview() {
     />
   );
 }
+
+
