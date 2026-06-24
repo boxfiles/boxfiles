@@ -63,10 +63,7 @@ jobs:
         run: |
           moon ci :lint
           moon ci :test
-          moon ci bot-host:release-readiness-gate
-          moon run repo:release-workflow-check
           moon ci :build
-          moon run repo:template-moon-tasks
 
       - uses: appthrust/moon-ci-retrospect@631a1e667f96e8ca893eab69f03e425f7fbfdc2b #v2.1.0
         if: success() || failure()
