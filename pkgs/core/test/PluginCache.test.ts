@@ -5,7 +5,7 @@ import {
   parsePluginSource,
   resolvePluginCacheRoot,
   type PluginCacheEntry,
-} from "../src/index";
+} from "../../plugin/src/index";
 
 describe("resolvePluginCacheRoot", () => {
   test("uses nonblank XDG_CACHE_HOME override", () => {

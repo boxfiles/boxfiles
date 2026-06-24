@@ -7,7 +7,7 @@ import {
   parsePluginSource,
   resolveFilePluginSource,
   type FilePluginSource,
-} from "../src/index";
+} from "../../plugin/src/index";
 
 const createdRoots: string[] = [];
 

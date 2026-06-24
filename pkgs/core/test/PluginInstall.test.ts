@@ -1,12 +1,12 @@
 import { describe, expect, test } from "bun:test";
-import { getPluginCacheEntry, installPluginDeclaration, parsePluginSource, type GitPluginSource, type NpmPluginSource, type PluginInstallFileSystem } from "../src/index";
+import { getPluginCacheEntry, installPluginDeclaration, parsePluginSource, type GitPluginSource, type NpmPluginSource, type PluginInstallFileSystem } from "../../plugin/src/index";
 
 describe("installPluginDeclaration", () => {
   test("validates config and fetches npm source before writing string shorthand to .boxfilesrc", async () => {
     const events: string[] = [];
     const fs = createConfigFs(events, JSON.stringify({ settings: { plugins: { allowRemote: true } }, plugins: { old: "file:./old" } }));
 
-    await installPluginDeclaration("demo", "npm:@boxfiles/plugin-demo@1.2.3", {
+    await installPluginDeclaration("demo", "npm:../../plugin/src/index-demo@1.2.3", {
       rootDir: "/workspace/project",
       fs,
       installNpm: async (source) => {
@@ -16,10 +16,10 @@ describe("installPluginDeclaration", () => {
       resolveFile: async () => { throw new Error("file resolver should not run"); },
     });
 
-    expect(events).toEqual(["read", "install:npm:@boxfiles/plugin-demo@1.2.3", "mkdir", "write"]);
+    expect(events).toEqual(["read", "install:npm:../../plugin/src/index-demo@1.2.3", "mkdir", "write"]);
     expect(readWrittenPluginMap(fs)).toEqual({
       old: "file:./old",
-      demo: "npm:@boxfiles/plugin-demo@1.2.3",
+      demo: "npm:../../plugin/src/index-demo@1.2.3",
     });
   });
 

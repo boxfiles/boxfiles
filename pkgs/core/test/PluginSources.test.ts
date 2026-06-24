@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { parsePluginSource, PluginSourceParseError } from "../src/index";
+import { parsePluginSource, PluginSourceParseError } from "../../plugin/src/index";
 
 describe("parsePluginSource", () => {
   test("parses npm scoped packages with versions", () => {

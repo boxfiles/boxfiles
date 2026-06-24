@@ -10,7 +10,7 @@ import {
   type GitCommandRunner,
   type GitPluginInstallerFileSystem,
   type GitPluginSource,
-} from "../src/index";
+} from "../../plugin/src/index";
 
 type CommandCall = {
   readonly command: string;

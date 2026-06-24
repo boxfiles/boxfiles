@@ -8,7 +8,7 @@ import {
   type CommandRunner,
   type CommandRunOptions,
   type NpmPluginSource,
-} from "../src/index";
+} from "../../plugin/src/index";
 
 type CommandCall = {
   readonly command: string;
@@ -30,11 +30,11 @@ describe("installNpmPluginSource", () => {
   test("packs npm package in an isolated temp directory and commits extracted artifact to cache", async () => {
     const context = await createInstallContext("success");
     const calls: CommandCall[] = [];
-    const source = expectNpmSource(parsePluginSource("npm:@boxfiles/plugin-demo@1.2.3"));
+    const source = expectNpmSource(parsePluginSource("npm:../../plugin/src/index-demo@1.2.3"));
     const runner: CommandRunner = async (command, args, options) => {
       calls.push({ command, args, options });
       if (command === "npm") return { exitCode: 0, stdout: JSON.stringify([{ filename: "boxfiles-plugin-demo-1.2.3.tgz" }]), stderr: "" };
-      await writeFile(join(options.cwd, "package", "package.json"), "{\"name\":\"@boxfiles/plugin-demo\"}\n");
+      await writeFile(join(options.cwd, "package", "package.json"), "{\"name\":\"../../plugin/src/index-demo\"}\n");
       return { exitCode: 0, stdout: "", stderr: "" };
     };
 
@@ -49,7 +49,7 @@ describe("installNpmPluginSource", () => {
     expect(calls[0]?.command).toBe("npm");
     expect(calls[0]?.args).toEqual([
       "pack",
-      "@boxfiles/plugin-demo@1.2.3",
+      "../../plugin/src/index-demo@1.2.3",
       "--pack-destination",
       join(calls[0]?.options.cwd ?? "", "pack"),
       "--ignore-scripts",

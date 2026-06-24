@@ -20,7 +20,7 @@ export function pluginReproducibilityWarning(name: string, source: string): Plug
       kind,
       name,
       source,
-      message: "npm source is floating and unlocked; not integrity-locked; planning uses the cached artifact, not live npm",
+      message: "npm source has no version spec; floating and unlocked; not integrity-locked; planning uses the cached artifact, not live npm",
     };
   }
 
@@ -29,7 +29,7 @@ export function pluginReproducibilityWarning(name: string, source: string): Plug
       kind,
       name,
       source,
-      message: "git source uses remote default branch; not integrity-locked; planning uses the cached artifact, not live git",
+      message: "git source has no ref; uses remote default branch; planning uses the cached artifact, not live git",
     };
   }
 

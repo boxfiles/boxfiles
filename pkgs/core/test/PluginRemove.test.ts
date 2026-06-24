@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { getPluginCacheEntry, parsePluginSource, removePluginDeclaration, type PluginRemoveFileSystem } from "../src/index";
+import { getPluginCacheEntry, parsePluginSource, removePluginDeclaration, type PluginRemoveFileSystem } from "../../plugin/src/index";
 
 describe("removePluginDeclaration", () => {
   test("removes declaration and keeps cache by default", async () => {

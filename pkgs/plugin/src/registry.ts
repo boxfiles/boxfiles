@@ -6,12 +6,15 @@ import {
 } from "./errors";
 import { normalizePluginModule } from "./schema";
 import type { BoxfilePlugin, PluginSummaryDto } from "./plugin";
+import { gatherPluginContextFacts } from "./runtime";
+import type { ContextFact, ContextService } from "@boxfiles/core";
 
 export class PluginRegistry {
     private readonly pluginRegistry = new Map<string, BoxfilePlugin>();
     private readonly actionProviders = new Map<string, ActionProvider<Type.TSchema>>();
     private readonly pluginSources = new Map<string, string>();
 
+    constructor(private readonly rootDir = process.cwd()) {}
     registerPlugin(plugin: BoxfilePlugin, source: string = "user"): void {
         if (this.pluginRegistry.has(plugin["id"])) throw new PluginAlreadyRegisteredError(plugin["id"]);
 
@@ -28,6 +31,15 @@ export class PluginRegistry {
 
     getActionProvider(kind: string): ActionProvider<Type.TSchema> | null {
         return this.actionProviders.get(kind) ?? null;
+    }
+
+
+    async gatherContextFacts(contextService: ContextService): Promise<readonly ContextFact[]> {
+        const facts: ContextFact[] = [];
+        for (const plugin of this.pluginRegistry.values()) {
+            facts.push(...await gatherPluginContextFacts(plugin, this.rootDir, contextService));
+        }
+        return facts;
     }
 
     listPlugins(): readonly PluginSummaryDto[] {
@@ -48,3 +60,6 @@ export class PluginRegistry {
         this.actionProviders.set(provider.kind, provider);
     }
 }
+
+export const PluginService = PluginRegistry;
+export type PluginService = PluginRegistry;

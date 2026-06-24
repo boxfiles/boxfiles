@@ -6,8 +6,8 @@ import {
   ManifestService,
   type ManifestDirectoryEntry,
   type ManifestFileSystem,
-  PluginService,
-} from "@boxfiles/core";
+  } from "@boxfiles/core";
+import { PluginService } from "../../plugin/src/index";
 
 type ManifestTestHarness = {
   readonly rootDir: string;

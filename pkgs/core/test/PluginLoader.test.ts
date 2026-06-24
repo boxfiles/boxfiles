@@ -3,13 +3,13 @@ import { mkdir, mkdtemp, readFile, writeFile } from "node:fs/promises";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { describe, expect, test } from "bun:test";
-import {
-  ContextService,
+import { ContextService } from "../src/index";
+  import {
   getPluginCacheEntry,
   loadInstalledPlugins,
   parsePluginSource,
   PluginService,
-} from "../src/index";
+} from "../../plugin/src/index";
 
 describe("loadInstalledPlugins", () => {
   test("fails when an npm declaration has no cached artifact", async () => {
@@ -33,7 +33,7 @@ describe("loadInstalledPlugins", () => {
     const root = await mkdtemp(join(tmpdir(), "boxfiles-loader-npm-"));
     const cacheHome = await mkdtemp(join(tmpdir(), "boxfiles-loader-cache-"));
     const markerPath = join(root, "npm-resolver-ran.txt");
-    const source = "npm:@boxfiles/plugin-remote@1.2.3";
+    const source = "npm:../../plugin/src/index-remote@1.2.3";
     const cacheEntry = getPluginCacheEntry(parsePluginSource(source), { env: { XDG_CACHE_HOME: cacheHome } });
     if (cacheEntry === null) throw new Error("Expected cache entry for npm source");
 
