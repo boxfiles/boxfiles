@@ -5,25 +5,33 @@ import { HeroAction } from '../components/HeroAction';
 import { HeroActions } from '../components/HeroActions';
 import { PlanPreview } from '../components/PlanPreview';
 import { Site } from '../components/Site';
+import { Section } from '../components/Section';
+import { Hero } from '../components/Hero';
+import { CopyTextToClipboard } from '../components/CopyTextToClipboard';
 
 export default function Page() {
   return (
     <Site>
-      <AboveTheFold />
-
-      <section className="mx-auto grid w-full max-w-7xl gap-8 px-4 pb-16 sm:px-6 lg:grid-cols-[1fr_520px] lg:px-8 lg:pb-24">
+      <Section>
+        <Hero>
+          <h1 className="text-2xl">.boxfiles</h1>
+        </Hero>
+      </Section>
+      <Section>
         <CtaHero
-          tagline="Ansible-lite for workstations"
           title="Provision machines without ceremony."
-          subtitle="Boxfiles turns manifests, modules, facts, and providers into a typed plan you can inspect before it touches a workstation."
+          subtitle="Boxfiles turns manifests of steps and facts into a idompotent plan you can inspect before it touches a workstation."
         >
           <HeroActions>
-            <HeroAction primary href="/quickstart">Start quickstart</HeroAction>
-            <HeroAction href="/plugins/authoring">Author a provider</HeroAction>
+            <HeroAction asChild><CopyTextToClipboard text="npm install -g @boxfiles/cli" /></HeroAction>
+            <HeroAction primary asChild><a href="/quickstart">Get started</a></HeroAction>
           </HeroActions>
         </CtaHero>
         <PlanPreview />
-      </section>
+      </Section>
+      <AboveTheFold />
     </Site>
   );
 }
+
+

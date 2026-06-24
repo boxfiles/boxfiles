@@ -1,6 +1,8 @@
 import { ServerCodeBlock } from 'fumadocs-ui/components/codeblock.rsc';
 
-const planPreview = `$ boxfiles plan workstation.yml
+const planPreview = `
+$ git clone github.com/my/dotfiles && cd dotfiles
+$ boxfiles plan workstation.yml
 
 facts
   os.platform       linux

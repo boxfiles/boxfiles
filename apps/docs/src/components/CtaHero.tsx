@@ -1,4 +1,5 @@
 import type { PropsWithChildren } from 'react';
+import { Hero } from './Hero';
 
 export function CtaHero(props: PropsWithChildren<{
   readonly title: string;
@@ -6,7 +7,7 @@ export function CtaHero(props: PropsWithChildren<{
   readonly tagline?: string;
 }>) {
   return (
-    <div className="flex max-w-2xl flex-col justify-center gap-8">
+    <Hero>
       {props.tagline && (
         <p className="w-fit rounded-full border border-rp-muted/40 bg-rp-surface px-3 py-1 text-xs font-medium uppercase tracking-[0.16em] text-rp-foam">
           {props.tagline}
@@ -21,6 +22,8 @@ export function CtaHero(props: PropsWithChildren<{
         </p>
       </div>
       {props.children}
-    </div>
+    </Hero>
   );
 }
+
+
