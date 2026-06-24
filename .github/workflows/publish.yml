@@ -97,6 +97,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_TOKEN: ${{ github.token }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DOCS_PUBLISH_SSH_KEY: ${{ secrets.DOCS_PUBLISH_SSH_KEY }}
+          DOCS_PUBLISH_TOKEN: ${{ secrets.DOCS_PUBLISH_TOKEN }}
           NPM_CONFIG_PROVENANCE: true
           PUBLISH_TARGET: ${{ env.PUBLISH_TARGET }}
           PUBLISH_TAG: ${{ env.PUBLISH_TAG }}

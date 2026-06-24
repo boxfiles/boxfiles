@@ -35,6 +35,13 @@ trap cleanup EXIT
 
 git_name="${GIT_AUTHOR_NAME:-github-actions[bot]}"
 git_email="${GIT_AUTHOR_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
+token="${DOCS_PUBLISH_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
+ssh_key="${DOCS_PUBLISH_SSH_KEY:-}"
+ssh_auth_sock="${SSH_AUTH_SOCK:-/tmp/docs_publish_ssh_agent.sock}"
+
+if [ -n "${token}" ] && [ -z "${GH_TOKEN:-}" ]; then
+  export GH_TOKEN="${token}"
+fi
 
 log "starting docs publish"
 log "source dir: ${src}"
@@ -54,18 +61,40 @@ fi
 repo="${owner}/${repo_name}"
 log "target repo: ${repo}"
 
-# Create the Pages repo if it does not exist yet.
-if gh repo view "${repo}" >/dev/null 2>&1; then
-  log "target repo exists"
+clone_url="https://github.com/${repo}.git"
+if [ -n "${ssh_key}" ]; then
+  log "SSH key found; configuring git over SSH"
+  mkdir -p "${HOME}/.ssh"
+  chmod 700 "${HOME}/.ssh"
+  ssh-keyscan github.com >> "${HOME}/.ssh/known_hosts"
+  key_file="${tmp}/docs_publish_key"
+  printf '%s\n' "${ssh_key}" > "${key_file}"
+  chmod 600 "${key_file}"
+  ssh-agent -a "${ssh_auth_sock}" >/dev/null
+  SSH_AUTH_SOCK="${ssh_auth_sock}" ssh-add "${key_file}"
+  export SSH_AUTH_SOCK="${ssh_auth_sock}"
+  clone_url="git@github.com:${repo}.git"
+elif [ -n "${token}" ]; then
+  log "token found; configuring git over HTTPS"
+  clone_url="https://x-access-token:${token}@github.com/${repo}.git"
 else
+  warn "no DOCS_PUBLISH_SSH_KEY, DOCS_PUBLISH_TOKEN, GH_TOKEN, or GITHUB_TOKEN found; git push may fail"
+fi
+
+# Create the Pages repo when token auth can do it. SSH deploy keys cannot create repos.
+if git ls-remote "${clone_url}" >/dev/null 2>&1; then
+  log "target repo exists"
+elif [ -n "${token}" ]; then
   log "target repo missing; creating ${repo}"
   gh repo create "${repo}" --public --description "Boxfiles documentation site"
   log "target repo created"
+else
+  fail "target repo missing or inaccessible: ${repo}. Create it first, add its deploy key, or set DOCS_PUBLISH_TOKEN."
 fi
 
 # Clone the Pages repo into a throwaway folder so the source checkout stays untouched.
 log "cloning target repo into temp dir"
-gh repo clone "${repo}" "${tmp}"
+git clone "${clone_url}" "${tmp}"
 log "clone complete"
 
 # Configure identity in the cloned repo because commits happen there, not here.
@@ -73,14 +102,7 @@ log "configuring git identity in temp clone"
 git -C "${tmp}" config user.name "${git_name}"
 git -C "${tmp}" config user.email "${git_email}"
 
-# gh can clone with its token, but git push needs credentials on origin too.
-token="${GH_TOKEN:-${GITHUB_TOKEN:-}}"
-if [ -n "${token}" ]; then
-  log "token found; configuring authenticated git remote"
-  git -C "${tmp}" remote set-url origin "https://x-access-token:${token}@github.com/${repo}.git"
-else
-  warn "no GH_TOKEN or GITHUB_TOKEN found; git push may prompt and fail in CI"
-fi
+# Origin already carries either SSH or HTTPS auth from clone_url.
 
 # Publish from the root of main, even when the repo was just created empty.
 if git -C "${tmp}" rev-parse --verify HEAD >/dev/null 2>&1; then
@@ -112,14 +134,18 @@ else
   log "push complete"
 fi
 
-# Configure GitHub Pages to serve from the repo root on main.
-log "configuring GitHub Pages source: ${branch} /"
-if gh api "repos/${repo}/pages" >/dev/null 2>&1; then
-  log "Pages site exists; updating source"
-  gh api --method PUT "repos/${repo}/pages" -f "source[branch]=${branch}" -f 'source[path]=/' >/dev/null
+# Configure GitHub Pages to serve from the repo root on main when API auth is available.
+if [ -n "${token}" ]; then
+  log "configuring GitHub Pages source: ${branch} /"
+  if gh api "repos/${repo}/pages" >/dev/null 2>&1; then
+    log "Pages site exists; updating source"
+    gh api --method PUT "repos/${repo}/pages" -f "source[branch]=${branch}" -f 'source[path]=/' >/dev/null
+  else
+    log "Pages site missing; creating site"
+    gh api --method POST "repos/${repo}/pages" -f "source[branch]=${branch}" -f 'source[path]=/' >/dev/null
+  fi
+  log "GitHub Pages configured"
 else
-  log "Pages site missing; creating site"
-  gh api --method POST "repos/${repo}/pages" -f "source[branch]=${branch}" -f 'source[path]=/' >/dev/null
+  warn "skipping GitHub Pages API config; set DOCS_PUBLISH_TOKEN if Pages is not already configured"
 fi
-log "GitHub Pages configured"
 log "docs publish complete"
