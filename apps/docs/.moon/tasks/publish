@@ -26,9 +26,10 @@ repo_name="boxfiles.github.io"
 src="${MOON_PROJECT_ROOT}/dist/public"
 branch="main"
 tmp="$(mktemp -d)"
+clone_dir="${tmp}/repo"
 
 cleanup() {
-  log "cleaning up temp clone ${tmp}"
+  log "cleaning up temp dir ${tmp}"
   rm -rf "${tmp}"
 }
 trap cleanup EXIT
@@ -94,43 +95,43 @@ fi
 
 # Clone the Pages repo into a throwaway folder so the source checkout stays untouched.
 log "cloning target repo into temp dir"
-git clone "${clone_url}" "${tmp}"
+git clone "${clone_url}" "${clone_dir}"
 log "clone complete"
 
 # Configure identity in the cloned repo because commits happen there, not here.
 log "configuring git identity in temp clone"
-git -C "${tmp}" config user.name "${git_name}"
-git -C "${tmp}" config user.email "${git_email}"
+git -C "${clone_dir}" config user.name "${git_name}"
+git -C "${clone_dir}" config user.email "${git_email}"
 
 # Origin already carries either SSH or HTTPS auth from clone_url.
 
 # Publish from the root of main, even when the repo was just created empty.
-if git -C "${tmp}" rev-parse --verify HEAD >/dev/null 2>&1; then
+if git -C "${clone_dir}" rev-parse --verify HEAD >/dev/null 2>&1; then
   log "target repo has commits; switching to ${branch}"
-  git -C "${tmp}" switch "${branch}" 2>/dev/null || git -C "${tmp}" switch -C "${branch}"
+  git -C "${clone_dir}" switch "${branch}" 2>/dev/null || git -C "${clone_dir}" switch -C "${branch}"
 else
   log "target repo is empty; creating orphan ${branch}"
-  git -C "${tmp}" switch --orphan "${branch}"
+  git -C "${clone_dir}" switch --orphan "${branch}"
 fi
 
 # Replace everything in the Pages repo root with the freshly built static site.
 log "replacing target repo root with docs build output"
-find "${tmp}" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-cp -R "${src}"/. "${tmp}"/
+find "${clone_dir}" -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+cp -R "${src}"/. "${clone_dir}"/
 
 # Keep GitHub Pages from running Jekyll over the generated files.
-touch "${tmp}/.nojekyll"
+touch "${clone_dir}/.nojekyll"
 
 # Commit and push only when the generated site changed.
 log "staging generated files"
-git -C "${tmp}" add -A
-if git -C "${tmp}" diff --cached --quiet; then
+git -C "${clone_dir}" add -A
+if git -C "${clone_dir}" diff --cached --quiet; then
   log "no docs changes to publish"
 else
   log "committing docs changes"
-  git -C "${tmp}" commit -m "publish docs"
+  git -C "${clone_dir}" commit -m "publish docs"
   log "pushing docs to ${repo}:${branch}"
-  git -C "${tmp}" push origin "HEAD:${branch}"
+  git -C "${clone_dir}" push origin "HEAD:${branch}"
   log "push complete"
 fi
 
