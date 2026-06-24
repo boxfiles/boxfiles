@@ -421,6 +421,7 @@ async function isManifestPath(
 
   // if it's under a files directory, it's not a manifest
   const relativePath = path.relative(rootDir, manifestPath);
+  if (relativePath === "boxfiles.yaml") return false;
   if (await isFileAssetPath(manifestPath, fileSystem)) return false;
 
   // config files are not manifests, anywhere in the tree.
