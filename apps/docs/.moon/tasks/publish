@@ -36,11 +36,11 @@ trap cleanup EXIT
 
 git_name="${GIT_AUTHOR_NAME:-github-actions[bot]}"
 git_email="${GIT_AUTHOR_EMAIL:-41898282+github-actions[bot]@users.noreply.github.com}"
-token="${DOCS_PUBLISH_TOKEN:-${GH_TOKEN:-${GITHUB_TOKEN:-}}}"
+token="${DOCS_PUBLISH_TOKEN:-}"
 ssh_key="${DOCS_PUBLISH_SSH_KEY:-}"
 ssh_auth_sock="${SSH_AUTH_SOCK:-/tmp/docs_publish_ssh_agent.sock}"
 
-if [ -n "${token}" ] && [ -z "${GH_TOKEN:-}" ]; then
+if [ -n "${token}" ]; then
   export GH_TOKEN="${token}"
 fi
 
@@ -79,7 +79,7 @@ elif [ -n "${token}" ]; then
   log "token found; configuring git over HTTPS"
   clone_url="https://x-access-token:${token}@github.com/${repo}.git"
 else
-  warn "no DOCS_PUBLISH_SSH_KEY, DOCS_PUBLISH_TOKEN, GH_TOKEN, or GITHUB_TOKEN found; git push may fail"
+  warn "no DOCS_PUBLISH_SSH_KEY or DOCS_PUBLISH_TOKEN found; git push may fail"
 fi
 
 # Create the Pages repo when token auth can do it. SSH deploy keys cannot create repos.
