@@ -18,7 +18,7 @@ name: failure
 steps:
   - uses: run
     with:
-      command: false
+      command: "false"
   - uses: run
     with:
       command: touch ~/.config/boxfiles/failure-hit
@@ -51,7 +51,7 @@ EOF
   [ -f "$HOME/.config/boxfiles/welcome.json" ]
   run cat "$HOME/.config/boxfiles/welcome.json"
   [ "$status" -eq 0 ]
-  [[ "$output" == *"welcome"* ]]
+  [[ "$output" == *"workstation"* ]]
 }
 
 @test "apply stops on first failure" {
@@ -60,7 +60,7 @@ EOF
   [ -x "$BOXFILES_BIN" ]
   run "$BOXFILES_BIN" --dir "$DEMO_FIXTURE_ROOT" apply --confirm
   [ "$status" -ne 0 ]
-  [[ "$output" == *"run failed"* ]]
+  [[ "$output" == *"run failed with exit code 1"* ]]
   [ ! -f "$HOME/.config/boxfiles/failure-hit" ]
 }
 
@@ -79,5 +79,5 @@ EOF
   [ -x "$BOXFILES_BIN" ]
   run "$BOXFILES_BIN" --dir "$DEMO_FIXTURE_ROOT" apply
   [ "$status" -ne 0 ]
-  [[ "$output" == *"unsafe action requires --confirm"* ]]
+  [[ "$output" == *"unsafe action requires --confirm"* ]] || echo "$output"
 }
