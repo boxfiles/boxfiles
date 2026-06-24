@@ -1,6 +1,9 @@
 {
   "apps/cli": "0.0.1",
+  "pkgs/config": "0.0.1",
   "pkgs/core": "0.0.1",
+  "pkgs/diagnostics": "0.0.1",
+  "pkgs/plugin": "0.0.1",
   "pkgs/provider-copy": "0.0.1",
   "pkgs/provider-gpu": "0.0.1",
   "pkgs/provider-link": "0.0.1",

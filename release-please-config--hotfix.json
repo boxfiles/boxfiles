@@ -8,7 +8,19 @@
       "group": "application",
       "release-type": "node"
     },
+    "pkgs/config": {
+      "group": "library",
+      "release-type": "node"
+    },
     "pkgs/core": {
+      "group": "library",
+      "release-type": "node"
+    },
+    "pkgs/diagnostics": {
+      "group": "library",
+      "release-type": "node"
+    },
+    "pkgs/plugin": {
       "group": "library",
       "release-type": "node"
     },

@@ -33,37 +33,41 @@ discover_release_files() {
   fi
 }
 
-# 1) moon query > jq
+# 1) moon query + package.json > release package map
 moon_query_to_project_map() {
-  moon query projects | jq -c '
-    {
-      packages: (
-        reduce (
-          .projects[]?
-          | {
-              source: (.source | strings),
-              group: (.layer // .config.layer // "unknown"),
-              releaseType: (
-                .project.releasePlease.releaseType
-                // .config.project.releasePlease.releaseType
-                // .config.project.metadata.releasePlease.releaseType
-                // ""
-              )
-            }
-          | select(.source != "" and .releaseType != "")
-        ) as $p
-        ({};
-          .[$p.source] = {
-            group: $p.group,
-            "release-type": $p.releaseType
-          }
-        )
-        | to_entries
-        | sort_by(.key)
-        | from_entries
-      )
-    }
-  '
+  moon query projects | jq -r '
+    .projects[]?
+    | select((.source | strings) != "")
+    | [.source, (.layer // .config.layer // "unknown")]
+    | @tsv
+  ' | while IFS=$'\t' read -r source layer; do
+    local package_file="${source}/package.json"
+
+    if [[ ! -f "${package_file}" ]]; then
+      continue
+    fi
+
+    if ! jq -e '.private != true and (.publishConfig.access // "") != ""' "${package_file}" >/dev/null; then
+      continue
+    fi
+
+    local version
+    version="$(jq -r '.version // "0.1.0"' "${package_file}")"
+
+    local group="${layer}"
+    if [[ "${source}" == pkgs/provider-* ]]; then
+      group="provider"
+    fi
+
+    jq -nc --arg source "${source}" --arg group "${group}" --arg version "${version}" '{
+      key: $source,
+      value: {
+        group: $group,
+        "release-type": "node",
+        version: $version
+      }
+    }'
+  done | jq -sc '{ packages: (sort_by(.key) | from_entries) }'
 }
 
 # 2) 1 > rp-config.packages format
@@ -71,6 +75,7 @@ moon_query_to_rp_config_packages() {
   local project_map_json="${1}"
   jq -c '
     (.packages // {})
+    | with_entries(del(.value.version))
     | to_entries
     | sort_by(.key)
     | from_entries
@@ -78,7 +83,7 @@ moon_query_to_rp_config_packages() {
 }
 
 # 3) 1 > rp-manifest format
-# Preserves existing versions when present; defaults new packages to 0.1.0.
+# Preserves existing versions when present; otherwise uses package.json version.
 moon_query_to_rp_manifest() {
   local project_map_json="${1}"
   local existing_manifest_json="${2:-}"
@@ -87,8 +92,10 @@ moon_query_to_rp_manifest() {
   fi
 
   jq -c --argjson existing "${existing_manifest_json}" '
-    (.packages // {} | keys | sort) as $paths
-    | reduce $paths[] as $path ({}; .[$path] = ($existing[$path] // "0.1.0"))
+    (.packages // {} | to_entries | sort_by(.key)) as $packages
+    | reduce $packages[] as $package ({};
+        .[$package.key] = ($existing[$package.key] // $package.value.version // "0.1.0")
+      )
   ' <<<"${project_map_json}"
 }
 
