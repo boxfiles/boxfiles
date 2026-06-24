@@ -3,7 +3,7 @@ import {
   ManifestService,
   RuntimeNotActiveError,
   } from "@boxfiles/core";
-import { PluginRegistry } from "@boxfiles/plugin";
+import { loadInstalledPlugins, PluginRegistry } from "@boxfiles/plugin";
 import { builtInPlugins } from "./providers";
 
 const RUNTIME_STATE_KEY = "boxfiles.runtime";
@@ -17,7 +17,7 @@ export interface CliRuntime {
 let activeRuntime: CliRuntime | null = null;
 
 export function createCliRuntime(rootDir: string): CliRuntime {
-  const pluginService = new PluginRegistry();
+  const pluginService = new PluginRegistry(rootDir);
   for (const plugin of builtInPlugins) {
     pluginService.registerPlugin(plugin, "builtin");
   }
@@ -42,6 +42,7 @@ async function createRuntimeForRoute(
   const runtime = createCliRuntime(rootDir);
   if (!shouldLoadInstalledPlugins(commandPath)) return runtime;
 
+  await loadInstalledPlugins({ rootDir, pluginService: runtime.pluginService });
   return runtime;
 }
 

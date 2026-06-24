@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import { app } from "../app";
 import { getActiveRuntime } from "../runtime";
-import { formatCommandError } from "@boxfiles/diagnostics";
+import { formatCommandError, formatPluginReproducibilityWarnings, type PluginReproducibilityWarning } from "@boxfiles/diagnostics";
 import { markdownView } from "../views/markdown";
 import {
   Manifest as ManifestFile,
@@ -188,8 +188,10 @@ export function renderManifestPlan(plan: ExecutionPlanDto): string {
   return [header, "", list].join("\n");
 }
 
-export function renderManifestPlanOutput(plan: ExecutionPlanDto): string {
-  return renderManifestPlan(plan);
+export function renderManifestPlanOutput(plan: ExecutionPlanDto, warnings: readonly PluginReproducibilityWarning[] = []): string {
+  const pluginWarnings = formatPluginReproducibilityWarnings(warnings);
+  if (pluginWarnings.length === 0) return renderManifestPlan(plan);
+  return [renderManifestPlan(plan), "", pluginWarnings].join("\n");
 }
 
 export function renderManifestList<T extends { readonly manifest: Manifest }>(
