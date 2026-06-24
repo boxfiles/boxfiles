@@ -16,7 +16,7 @@ tasks:
 
   demoe2e:
     inputs:
-      - "src/demo/e2e/**"
+      - "apps/e2e/**"
       - "Containerfile"
     script: |
       set -euo pipefail
