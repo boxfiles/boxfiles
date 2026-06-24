@@ -1,3 +1,5 @@
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
 import Type from "typebox";
 import Schema from "typebox/schema";
 import { NonBlankStringSchema } from "@boxfiles/core";
@@ -55,13 +57,47 @@ const symlinkActionProvider: ActionProvider<typeof SymlinkConfigSchema> = {
     },
 
     async apply(input) {
+        const sourcePath = path.join(
+            input.ctx.rootDir,
+            input.ctx.manifest.filesDir,
+            input.action.config.from,
+        );
+        const targetPath = expandHome(input.action.config.to);
+
+        if (await exists(targetPath)) {
+            return {
+                actionId: input.action.id,
+                success: true,
+                message: "target exists",
+            };
+        }
+
+        await fs.mkdir(path.dirname(targetPath), { recursive: true });
+        await fs.symlink(sourcePath, targetPath);
+
         return {
             actionId: input.action.id,
-            success: false,
-            message: "symlink apply is not implemented yet",
+            success: true,
+            message: "linked",
         };
     },
 };
+
+function expandHome(targetPath: string): string {
+    const home = process.env["HOME"];
+    if (targetPath === "~") return home ?? targetPath;
+    if (targetPath.startsWith("~/")) return path.join(home ?? "~", targetPath.slice(2));
+    return targetPath;
+}
+
+async function exists(targetPath: string): Promise<boolean> {
+    try {
+        await fs.lstat(targetPath);
+        return true;
+    } catch {
+        return false;
+    }
+}
 
 export default createPlugin({
     id: "link",

@@ -1,5 +1,6 @@
 import Type from "typebox";
 import * as path from "node:path";
+import * as fs from "node:fs/promises";
 import Schema from "typebox/schema";
 import { NonBlankStringSchema } from "@boxfiles/core";
 import { type ActionProvider } from "@boxfiles/core";
@@ -75,10 +76,32 @@ const copyActionProvider: ActionProvider<typeof CopyConfigSchema> = {
     },
 
     async apply(input) {
+        const sourcePath = path.join(
+            input.ctx.rootDir,
+            input.ctx.manifest.filesDir,
+            input.action.config.from,
+        );
+        const targetPath = expandHome(input.action.config.to);
+
+        if (!input.action.config.overwrite && await exists(targetPath)) {
+            return {
+                actionId: input.action.id,
+                success: true,
+                message: "target exists",
+            };
+        }
+
+        await fs.mkdir(path.dirname(targetPath), { recursive: true });
+        await fs.cp(sourcePath, targetPath, {
+            recursive: true,
+            force: input.action.config.overwrite === true,
+            errorOnExist: input.action.config.overwrite !== true,
+        });
+
         return {
             actionId: input.action.id,
-            success: false,
-            message: "copy apply is not implemented yet",
+            success: true,
+            message: "copied",
         };
     },
 };
@@ -88,6 +111,22 @@ function hasInvalidSourcePrefix(from: string): boolean {
     if (path.isAbsolute(from)) return true;
     if (normalized === "files" || normalized.startsWith("files/")) return true;
     return normalized === ".." || normalized.startsWith("../");
+}
+
+function expandHome(targetPath: string): string {
+    const home = process.env["HOME"];
+    if (targetPath === "~") return home ?? targetPath;
+    if (targetPath.startsWith("~/")) return path.join(home ?? "~", targetPath.slice(2));
+    return targetPath;
+}
+
+async function exists(targetPath: string): Promise<boolean> {
+    try {
+        await fs.access(targetPath);
+        return true;
+    } catch {
+        return false;
+    }
 }
 
 
