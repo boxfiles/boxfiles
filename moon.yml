@@ -16,7 +16,11 @@ tasks:
 
   demoe2e:
     inputs:
-      - "apps/e2e/**"
+      - "apps/*/e2e/**"
+      - "pkgs/*/e2e/**"
+      - "pkgs/e2e-common/**"
+      - "apps/*/moon.yml"
+      - "pkgs/*/moon.yml"
       - "apps/cli/src/**"
       - "pkgs/**/src/**"
       - "Containerfile"

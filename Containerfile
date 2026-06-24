@@ -25,6 +25,8 @@ RUN mise install && mise use -g bun && bunx --package @moonrepo/cli moon run cli
 FROM ghcr.io/jdx/mise:latest AS test
 WORKDIR /repo
 COPY --from=build /repo /repo
-RUN mise use -g bats
+RUN mise use -g bats bun && printf '%s\n' '#!/usr/bin/env sh' 'exec bunx --package @moonrepo/cli moon "$@"' > /usr/local/bin/moon && chmod +x /usr/local/bin/moon
+ENV PATH="/usr/local/bin:/mise/shims:/usr/local/cargo/bin:/usr/local/sbin:/usr/bin:/sbin:/bin"
+ENTRYPOINT []
 
-CMD ["mise", "x", "bats", "--", "bats", "apps/e2e/smoke.sh"]
+CMD ["moon", "run", ":e2e"]

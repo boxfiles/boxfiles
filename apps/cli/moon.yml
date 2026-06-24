@@ -15,6 +15,13 @@ tasks:
   typecheck:
     command: "bunx tsc --noEmit"
 
+  e2e:
+    script: |
+      set -euo pipefail
+      tmp="$(mktemp -d)"
+      trap 'rm -rf "$tmp"' EXIT
+      TMPDIR="$tmp" bats ./e2e/*.bats.sh
+
   build:
     script: |
       set -euo pipefail
