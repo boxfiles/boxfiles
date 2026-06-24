@@ -155,7 +155,7 @@ export async function installGitPluginSource(source: GitPluginSource, options: {
   const rev = await runner("git", ["rev-parse", "HEAD"], { cwd: cloneDir });
   if (rev.exitCode !== 0) throw new Error(`git rev-parse failed with exit code ${rev.exitCode}\n${rev.stderr}\n${rev.stdout}`);
   const cacheEntry = expectCacheEntry(source, options);
-  const metadata = source.ref === undefined
+  const metadata: Readonly<Record<string, string>> = source.ref === undefined
     ? { requestedUrl: source.url, resolvedCommit: rev.stdout.trim() }
     : { requestedUrl: source.url, requestedRef: source.ref, resolvedCommit: rev.stdout.trim() };
   await fileSystem.writeFile(join(cloneDir, ".boxfiles-plugin-source.json"), `${JSON.stringify(metadata, null, 2)}\n`);
@@ -170,7 +170,7 @@ export async function loadInstalledPlugins(options: {
   readonly cache?: PluginCacheOptions;
 }): Promise<readonly { readonly name: string; readonly source: string; readonly kind: PluginSource["kind"]; readonly entryPath: string }[]> {
   const configPath = join(options.rootDir, ".boxfilesrc");
-  const config = await readConfig({ readFile, writeFile }, configPath, false);
+  const config = await readConfig({ readFile }, configPath, false);
   const loaded: { readonly name: string; readonly source: string; readonly kind: PluginSource["kind"]; readonly entryPath: string }[] = [];
   for (const [name, sourceText] of Object.entries(config.plugins)) {
     const source = parsePluginSource(sourceText);
@@ -294,8 +294,10 @@ async function readConfig(fs: Pick<PluginInstallFileSystem, "readFile">, configP
   if (!isRecord(value)) throw new Error("Validation failed for .boxfilesrc config");
   const plugins = value["plugins"] ?? {};
   if (!isRecord(plugins)) throw new Error("Validation failed for .boxfilesrc config");
-  if (!Object.values(plugins).every((entry) => typeof entry === "string")) throw new Error("Validation failed for .boxfilesrc config");
-  return { ...value, plugins };
+  const pluginEntries = Object.entries(plugins);
+  if (!pluginEntries.every((entry) => typeof entry[1] === "string")) throw new Error("Validation failed for .boxfilesrc config");
+  const typedPlugins = Object.fromEntries(pluginEntries) as Readonly<Record<string, string>>;
+  return { settings: value["settings"], plugins: typedPlugins };
 }
 
 function stripPlugins(config: BoxfilesConfig): Readonly<Record<string, unknown>> {
