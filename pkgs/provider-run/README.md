@@ -16,4 +16,4 @@ Run actions are always marked unsafe and non-idempotent because arbitrary shell 
 
 ## Status
 
-Planning is implemented. Apply is intentionally stubbed until Boxfiles has a concrete execution safety policy.
+Planning and apply are implemented. Apply runs shell commands only when execution is confirmed, reports non-zero exits, and skips commands when an optional `check` succeeds.

@@ -99,14 +99,14 @@ Compile a manifest plan:
 boxfiles manifests plan
 ```
 
-Apply a manifest when ready:
+Apply all discovered manifests when ready:
 
 ```sh
-boxfiles apply modules.git
+boxfiles apply --confirm
 ```
 
-or apply all discovered manifests:
+Preview apply without mutating files:
 
 ```sh
-boxfiles apply
+boxfiles apply --dry-run
 ```

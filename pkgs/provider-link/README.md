@@ -17,4 +17,4 @@ Use this provider when workstation setup should link an existing path instead of
 
 ## Status
 
-Planning is implemented. Apply is intentionally stubbed until Boxfiles has a concrete execution safety policy.
+Planning and apply are implemented. Apply creates parent directories, creates symbolic links from manifest files, and leaves existing targets unchanged.

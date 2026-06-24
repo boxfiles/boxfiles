@@ -18,4 +18,4 @@ with:
 
 ## Status
 
-Planning is implemented. Apply is intentionally stubbed until Boxfiles has a concrete execution safety policy.
+Planning and apply are implemented. Apply creates parent directories, copies files or directories from manifest files, skips existing targets by default, and overwrites only when `overwrite: true` is set.
