@@ -1,35 +1,33 @@
 import '../app.css';
-import { AboveTheFold } from '../components/AboveTheFold';
 import { CtaHero } from '../components/CtaHero';
 import { HeroAction } from '../components/HeroAction';
 import { HeroActions } from '../components/HeroActions';
 import { PlanPreview } from '../components/PlanPreview';
 import { Site } from '../components/Site';
 import { Section } from '../components/Section';
-import { Hero } from '../components/Hero';
 import { CopyTextToClipboard } from '../components/CopyTextToClipboard';
+import { Logo } from '../components/Logo';
 
 export default function Page() {
   return (
     <Site>
-      <Section>
-        <Hero>
-          <h1 className="text-2xl">.boxfiles</h1>
-        </Hero>
-      </Section>
-      <Section>
+      <Section className="min-h-lvh items-center gap-12">
         <CtaHero
+
+          tagline={
+            <Logo className="self-center text-rp-overlay" />
+          }
           title="Provision machines without ceremony."
           subtitle="Boxfiles turns manifests of steps and facts into a idompotent plan you can inspect before it touches a workstation."
         >
           <HeroActions>
-            <HeroAction asChild><CopyTextToClipboard text="npm install -g @boxfiles/cli" /></HeroAction>
+            <HeroAction asChild><CopyTextToClipboard text="mise use -g github:boxfiles/boxfiles" /></HeroAction>
             <HeroAction primary asChild><a href="/quickstart">Get started</a></HeroAction>
+            <HeroAction asChild><a href="https://github.com/boxfiles/boxfiles" target="_blank" rel="noopener noreferrer">GitHub</a></HeroAction>
           </HeroActions>
         </CtaHero>
         <PlanPreview />
       </Section>
-      <AboveTheFold />
     </Site>
   );
 }
