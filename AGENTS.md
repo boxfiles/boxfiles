@@ -65,6 +65,17 @@ When reading/writing project plans, design notes, and long-lived decisions use `
 - Add or update tests when behavior becomes non-trivial.
 - Validate with observable output: typecheck, tests, or focused command execution.
 
+## Testing and e2e
+
+- Unit tests SHOULD stay near the package that owns the code under test.
+- Real CLI smoke tests MUST be Bats tests named `*.bats.sh` under the owning project `e2e/` directory, for example `pkgs/provider-copy/e2e/copy.bats.sh`.
+- Shared e2e helpers MUST live in `pkgs/e2e-common/helpers.sh`; package e2e tests SHOULD load helpers with `load "/repo/pkgs/e2e-common/helpers.sh"` inside the container.
+- `pkgs/e2e-common` MUST NOT own behavior tests. It is shared test infrastructure only.
+- Each project with e2e tests MUST expose a Moon task shaped as `e2e: bats ./e2e/*.bats.sh`.
+- The containerized demo runner SHOULD execute `moon run :e2e` so Moon fans out to each package-owned e2e task.
+- E2E tests SHOULD exercise real user flows through the compiled CLI binary, not provider internals.
+- Do not add empty `e2e` tasks or placeholder Bats files. Add package e2e ownership only when real behavior exists.
+- Root `repo:demoe2e` inputs MUST include package e2e files, `pkgs/e2e-common/**`, CLI source, provider/core/plugin source, and `Containerfile` so cache hits do not hide behavior changes.
 ## Refactoring
 
 - MUST NOT use package barrel exports to hide ownership. Import from the package that owns the symbol.
