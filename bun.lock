@@ -48,6 +48,7 @@
       "name": "@boxfiles/docs",
       "version": "0.0.1",
       "dependencies": {
+        "@radix-ui/react-slot": "^1.3.0",
         "@takumi-rs/core": "*",
         "classnames": "^2.5.1",
         "fumadocs-core": "^16.10.5",
