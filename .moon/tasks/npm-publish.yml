@@ -18,35 +18,17 @@ tasks:
         exit 1
       fi
 
-      case "${publish_tag}" in
-        latest|next)
-          ;;
-        *)
-          echo "ERROR: unsupported PUBLISH_TAG='${publish_tag}' (expected: latest or next)." >&2
-          exit 1
-          ;;
-      esac
+      eval "$("${MOON_WORKSPACE_ROOT}/.moon/tasks/generate-publish-git-tag" "${publish_tag}" ".")"
 
       if [ "${publish_tag}" = "next" ]; then
-        last_tag="$(git describe --tags --abbrev=0 2>/dev/null || true)"
-        if [ -n "${last_tag}" ]; then
-          build_number="$(git rev-list "${last_tag}..HEAD" --count)"
-        else
-          build_number="$(git rev-list HEAD --count)"
-        fi
-
-        current_version="$(jq -r '.version' package.json)"
-        base_version="${current_version%%-*}"
-        prerelease_version="${base_version}-next.${build_number}"
-
-        echo "Preparing next prerelease: ${current_version} -> ${prerelease_version}"
+        echo "Preparing next prerelease: ${PUBLISH_CURRENT_VERSION} -> ${PUBLISH_VERSION}"
         node -e '
           const fs = require("node:fs");
           const pkgPath = "package.json";
           const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
           pkg.version = process.argv[1];
           fs.writeFileSync(pkgPath, `${JSON.stringify(pkg, null, 2)}\n`);
-        ' "${prerelease_version}"
+        ' "${PUBLISH_VERSION}"
       fi
 
       args=(--access public --tag "${publish_tag}")

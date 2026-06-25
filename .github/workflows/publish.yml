@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
-      name: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target || inputs.target }}-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.tag || inputs.tag }}
+      name: publish-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target || inputs.target }}
     env:
       PUBLISH_TARGET: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target || inputs.target }}
       PUBLISH_TAG: ${{ github.event_name == 'repository_dispatch' && github.event.client_payload.tag || inputs.tag }}
