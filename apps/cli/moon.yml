@@ -46,6 +46,7 @@ tasks:
   publish:
     deps:
       - "~:build"
+      - "docs:generate-version-manifest"
     script: |
       set -euo pipefail
 
@@ -109,6 +110,8 @@ tasks:
         ./dist/boxfiles-darwin-arm64 \
         ./dist/boxfiles-windows-x64.exe \
         --clobber
+
+      moon run docs:upload-version-manifest
     outputs:
       - "./dist/boxfiles-linux-x64"
       - "./dist/boxfiles-linux-arm64"

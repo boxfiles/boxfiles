@@ -14,9 +14,11 @@ tasks:
       runInCI: false
 
   build:
+    dependsOn: ["generate-version-manifest"]
     command: "bun run build"
     inputs:
       - "content/**/*"
+      - "public/**/*"
       - "package.json"
       - "press.config.tsx"
       - "source.config.ts"
@@ -24,6 +26,21 @@ tasks:
       - "waku.config.ts"
     outputs:
       - "dist/public"
+
+  generate-version-manifest:
+    command: "bash .moon/tasks/generate-version-manifest"
+    inputs:
+      - "/.release-please-manifest.json"
+      - "/apps/*/package.json"
+      - "/pkgs/*/package.json"
+    outputs:
+      - "public/releases.json"
+
+  upload-version-manifest:
+    dependsOn: ["generate-version-manifest"]
+    command: "bash .moon/tasks/upload-version-manifest"
+    options:
+      cache: false
 
   typecheck:
     command: "bun run typecheck"
