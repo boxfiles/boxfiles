@@ -50,32 +50,57 @@ tasks:
       set -euo pipefail
 
       publish_tag="${PUBLISH_TAG:-}"
-      if [ "${publish_tag}" != "latest" ]; then
-        echo "Skipping GitHub release asset upload for PUBLISH_TAG='${publish_tag:-unset}'."
-        exit 0
-      fi
-
       version="$(jq -r '.version' package.json)"
       release_tag=""
-      candidate_tags=(
-        "apps/cli-v${version}"
-        "cli-v${version}"
-        "@boxfiles/cli-v${version}"
-        "v${version}"
-      )
 
-      for candidate_tag in "${candidate_tags[@]}"; do
-        if gh release view "${candidate_tag}" >/dev/null 2>&1; then
-          release_tag="${candidate_tag}"
-          break
-        fi
-      done
+      case "${publish_tag}" in
+        latest)
+          candidate_tags=(
+            "apps/cli-v${version}"
+            "cli-v${version}"
+            "@boxfiles/cli-v${version}"
+            "v${version}"
+          )
 
-      if [ -z "${release_tag}" ]; then
-        echo "ERROR: unable to find GitHub release for @boxfiles/cli version ${version}." >&2
-        echo "Tried: ${candidate_tags[*]}" >&2
-        exit 1
-      fi
+          for candidate_tag in "${candidate_tags[@]}"; do
+            if gh release view "${candidate_tag}" >/dev/null 2>&1; then
+              release_tag="${candidate_tag}"
+              break
+            fi
+          done
+
+          if [ -z "${release_tag}" ]; then
+            echo "ERROR: unable to find GitHub release for @boxfiles/cli version ${version}." >&2
+            echo "Tried: ${candidate_tags[*]}" >&2
+            exit 1
+          fi
+          ;;
+        next)
+          release_tag="boxfiles-cli-next"
+          target_ref="${GITHUB_SHA:-HEAD}"
+
+          git tag -f "${release_tag}" "${target_ref}"
+          git push origin "refs/tags/${release_tag}" --force
+
+          if gh release view "${release_tag}" >/dev/null 2>&1; then
+            gh release edit "${release_tag}" \
+              --title "Boxfiles CLI next" \
+              --notes "Automated prerelease build from ${target_ref}." \
+              --prerelease
+          else
+            gh release create "${release_tag}" \
+              --title "Boxfiles CLI next" \
+              --notes "Automated prerelease build from ${target_ref}." \
+              --prerelease \
+              --latest=false \
+              --verify-tag
+          fi
+          ;;
+        *)
+          echo "ERROR: unsupported PUBLISH_TAG='${publish_tag:-unset}' (expected: latest or next)." >&2
+          exit 1
+          ;;
+      esac
 
       gh release upload "${release_tag}" \
         ./dist/boxfiles-linux-x64 \
