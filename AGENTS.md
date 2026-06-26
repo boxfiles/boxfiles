@@ -6,6 +6,20 @@ Boxfiles is a Bun + TypeScript CLI/GUI for workstation provisioning: low-ceremon
 
 Also read and respect any AGENTS.md found in any pkgs/apps dir.
 
+## Agent skills
+
+### Issue tracker
+
+Issues live in GitHub Issues for `boxfiles/boxfiles`. See `.memory/docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Triage uses default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `.memory/docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Domain docs use multi-context layout via root `CONTEXT-MAP.md`. See `.memory/docs/agents/domain.md`.
+
 ## Runtime and tooling
 
 - Use **Bun** for package management and execution.
