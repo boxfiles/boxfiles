@@ -4,9 +4,12 @@ load "/repo/pkgs/e2e-common/helpers.sh"
 
 setup() {
   setup_demo_fixture
+  write_manifest ".boxfilesrc.yaml" <<'EOF'
+plugins: {}
+EOF
 }
 
-@test "manifests files lists demo manifests and ignores assets" {
+@test "manifests files lists demo manifests and ignores assets/config" {
   assert_boxfiles_bin
 
   run "$BOXFILES_BIN" --dir "$DEMO_FIXTURE_ROOT" manifests files
@@ -16,7 +19,8 @@ setup() {
   assert_output_contains "workstation.yaml"
   assert_output_contains "base/foundation.toml"
   assert_output_contains "runtime/javascript.yaml"
-  [[ "$output" != *"boxfiles.yaml"* ]]
+  assert_output_contains "boxfiles.yaml"
+  [[ "$output" != *".boxfilesrc"* ]]
   [[ "$output" != *"files/sample.yaml"* ]]
   [[ "$output" != *"applications/files/package-list.yml"* ]]
 }
