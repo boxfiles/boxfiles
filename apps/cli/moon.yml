@@ -7,13 +7,13 @@ toolchains:
 
 tasks:
   lint:
-    command: "bunx tsc --noEmit"
+    command: "bun x tsc --noEmit"
 
   test:
     command: "bun test"
 
   typecheck:
-    command: "bunx tsc --noEmit"
+    command: "bun x tsc --noEmit"
 
   e2e:
     script: |
