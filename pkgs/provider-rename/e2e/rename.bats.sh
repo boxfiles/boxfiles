@@ -16,12 +16,12 @@ steps:
   - uses: rename
     with:
       from: ~/.config/boxfiles/source.txt
-      to: ~/.config/boxfiles/target.txt
+      to: ~/.local/share/boxfiles/target.txt
 EOF
 
   run "$BOXFILES_BIN" --dir "$DEMO_FIXTURE_ROOT" apply --confirm
 
   [ "$status" -eq 0 ]
   [ ! -e "$HOME/.config/boxfiles/source.txt" ]
-  assert_file_contains "$HOME/.config/boxfiles/target.txt" "renamed"
+  assert_file_contains "$HOME/.local/share/boxfiles/target.txt" "renamed"
 }

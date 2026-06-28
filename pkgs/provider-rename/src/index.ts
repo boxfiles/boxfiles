@@ -69,6 +69,8 @@ const renameActionProvider: ActionProvider<typeof RenameConfigSchema> = {
             };
         }
 
+        await fs.mkdir(path.dirname(targetPath), { recursive: true });
+
         await fs.rename(sourcePath, targetPath);
 
         return {
