@@ -73,8 +73,8 @@ export type FactResolverContext = {
   readonly facts: ContextSnapshot;
 };
 
-export type ContextResolver = (ctx: FactResolverContext) => JsonValue | Promise<JsonValue>;
-export type ContextEntry = JsonValue | ContextResolver;
+export type ContextResolver = (ctx: FactResolverContext) => JsonValue | undefined | Promise<JsonValue | undefined>;
+export type ContextEntry = JsonValue | undefined | ContextResolver;
 export type ContextDefinition = { readonly [key: string]: ContextEntry };
 
 export class ContextService {
