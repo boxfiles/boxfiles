@@ -24,6 +24,7 @@ _Avoid_: system inventory, hardware inventory
 A **Context Fact** about the current workstation user that is gathered without changing workstation state.
 _Avoid_: OS user field, account inventory
 
+
 **POSIX User Account Fact**:
 A **User Context Fact** about POSIX account attributes such as numeric user id, group id, home directory, or login shell.
 _Avoid_: required user field, account database
