@@ -1,11 +1,35 @@
 # @boxfiles/provider-os
 
-Operating system context provider placeholder for Boxfiles.
+Read-only operating system Context Facts for Boxfiles.
 
-This package reserves the `os` plugin capability for future workstation facts about platform and distribution.
+The package exports the default `os` Provider. It exposes flat `os.*` facts and no actions.
 
-Expected future facts may include platform, architecture, distribution name, distribution version, release channel, and OS-specific feature flags.
+## Emitted facts
 
-## Status
+Generic facts, emitted when the runtime API returns a value:
 
-No actions or context resolvers are implemented yet. The package currently registers an empty `os` plugin so manifests and package boundaries can stabilize before implementation.
+- `os.platform`
+- `os.type`
+- `os.release`
+- `os.version`
+- `os.arch`
+- `os.machine`
+- `os.hostname`
+- `os.homedir`
+- `os.tmpdir`
+- `os.user.username`
+- `os.memory.total` — bytes
+- `os.memory.free` — bytes
+
+Linux distro facts, emitted when `/etc/os-release` is readable and contains the value:
+
+- `os.distro.id`
+- `os.distro.versionId`
+- `os.distro.prettyName`
+- `os.distro.idLike` — string array
+
+Unavailable facts are omitted. The provider does not emit `unknown`, `null`, or placeholder values.
+
+## Deferred scope
+
+No rich hardware inventory, package inventory, libc detection, WSL detection, container detection, CPU list facts, sensitive metadata model changes, or actions are included in this slice.
