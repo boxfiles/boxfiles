@@ -4,6 +4,7 @@ import { app } from "./app";
 import { manifestCmd } from "./cmds/manifests";
 import { applyCmd } from "./cmds/apply";
 import { pluginCmd } from "./cmds/plugin";
+import { contextCmd } from "./cmds/context";
 import { boxfilesRuntimePlugin } from "./runtime";
 
 const cli = app
@@ -14,7 +15,8 @@ const cli = app
   .args([{ name: "cmd", type: "string", variadic: true }])
   .command(manifestCmd)
   .command(applyCmd)
-  .command(pluginCmd);
+  .command(pluginCmd)
+  .command(contextCmd);
 
 await cli.execute({ argv: normalizeGlobalFlags(process.argv.slice(2)) });
 
