@@ -31,7 +31,7 @@ tasks:
       set -euo pipefail
       tmp="$(mktemp -d)"
       trap 'rm -rf "$tmp"' EXIT
-      TMPDIR="$tmp" bats ./e2e/*.bats.sh
+      TMPDIR="$tmp" mise x -- bats ./e2e/*.bats.sh
 
   publish:
     type: run
