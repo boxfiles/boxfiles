@@ -20,6 +20,14 @@ _Avoid_: inventory item, diagnostic field
 An **OS Context Fact** that identifies the workstation OS without performing rich hardware, package, container, WSL, or libc inventory.
 _Avoid_: system inventory, hardware inventory
 
+**User Context Fact**:
+A **Context Fact** about the current workstation user that is gathered without changing workstation state.
+_Avoid_: OS user field, account inventory
+
+**POSIX User Account Fact**:
+A **User Context Fact** about POSIX account attributes such as numeric user id, group id, home directory, or login shell.
+_Avoid_: required user field, account database
+
 **Manifest**:
 A file that declares provisioning steps and dependencies.
 _Avoid_: playbook, script
@@ -34,7 +42,9 @@ _Avoid_: run, execution
 - A **Manifest** compiles into part of a **Plan**.
 - A **Plan** may use **Context Facts** when providers calculate proposed changes.
 - An **OS Context Fact** is a **Context Fact** with a stable `os.*` name.
-
+- A **User Context Fact** is a **Context Fact** with a stable `user.*` name.
+- A **POSIX User Account Fact** may be omitted when the platform cannot report it.
+- A user's home directory is a **User Context Fact**, not an **OS Context Fact**.
 ## Example dialogue
 
 > **Dev:** "Should the os provider change workstation state?"
@@ -45,3 +55,6 @@ _Avoid_: run, execution
 - "provider" was used broadly; resolved: the `os` **Provider** should provide **Context Facts** only, not actions.
 - "os" was considered as a single aggregate fact; resolved: **OS Context Facts** use stable flat `os.*` names.
 - "unknown" was considered for unavailable OS facts; resolved: unavailable **OS Context Facts** are omitted, not represented as placeholder values.
+- "username" was owned by `os.user.username`; resolved: current workstation user identity belongs to **User Context Facts** under `user.*`, not **OS Context Facts**.
+- "POSIX user facts" are not guaranteed on every platform; resolved: unavailable **POSIX User Account Facts** are omitted, not represented as placeholders.
+- "home directory" was owned by `os.homedir`; resolved: current workstation home directory belongs to **User Context Facts** under `user.*`, not **OS Context Facts**.

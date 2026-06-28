@@ -12,9 +12,7 @@ export type OsApi = {
     readonly arch: () => string;
     readonly machine: () => string;
     readonly hostname: () => string;
-    readonly homedir: () => string;
     readonly tmpdir: () => string;
-    readonly userInfo: () => { readonly username?: string };
     readonly totalmem: () => number;
     readonly freemem: () => number;
 };
@@ -40,9 +38,7 @@ const factKeys = [
     "os.arch",
     "os.machine",
     "os.hostname",
-    "os.homedir",
     "os.tmpdir",
-    "os.user.username",
     "os.memory.total",
     "os.memory.free",
     "os.distro.id",
@@ -76,9 +72,7 @@ export async function buildOsFactMap(options: OsFactOptions = {}): Promise<OsFac
     setStringFact(facts, "os.arch", readOptional(() => os.arch()));
     setStringFact(facts, "os.machine", readOptional(() => os.machine()));
     setStringFact(facts, "os.hostname", readOptional(() => os.hostname()));
-    setStringFact(facts, "os.homedir", readOptional(() => os.homedir()));
     setStringFact(facts, "os.tmpdir", readOptional(() => os.tmpdir()));
-    setStringFact(facts, "os.user.username", readOptional(() => os.userInfo().username));
     setNumberFact(facts, "os.memory.total", readOptional(() => os.totalmem()));
     setNumberFact(facts, "os.memory.free", readOptional(() => os.freemem()));
 

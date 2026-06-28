@@ -15,9 +15,7 @@ Generic facts, emitted when the runtime API returns a value:
 - `os.arch`
 - `os.machine`
 - `os.hostname`
-- `os.homedir`
 - `os.tmpdir`
-- `os.user.username`
 - `os.memory.total` — bytes
 - `os.memory.free` — bytes
 

@@ -1,11 +1,19 @@
 # @boxfiles/provider-user
 
-User context provider placeholder for Boxfiles.
+User context provider for Boxfiles.
 
-This package reserves the `user` plugin capability for future facts about the current workstation user.
+## Context facts
 
-Expected future facts may include username, home directory, shell, UID/GID where available, and user-specific config paths.
+This provider emits facts about the current workstation user when Node can report them:
 
-## Status
+- `user.username`
+- `user.uid`
+- `user.gid`
+- `user.homedir`
+- `user.shell`
 
-No actions or context resolvers are implemented yet. The package currently registers an empty `user` plugin so manifests and package boundaries can stabilize before implementation.
+Unavailable facts are omitted. Empty strings, negative ids, and non-finite ids are not emitted.
+
+## Actions
+
+No actions are implemented.

@@ -31,9 +31,7 @@ describe("os provider", () => {
             arch: () => "x64",
             machine: () => "",
             hostname: () => "forge",
-            homedir: () => "/home/kin",
             tmpdir: () => "/tmp",
-            userInfo: () => ({}),
             totalmem: () => 1024,
             freemem: () => 512,
         };
@@ -53,7 +51,7 @@ describe("os provider", () => {
         const snapshot = contextService.snapshot();
 
         expect("os.machine" in snapshot).toBe(false);
-        expect("os.user.username" in snapshot).toBe(false);
+        expect("os.homedir" in snapshot).toBe(false);
         expect("os.distro.id" in snapshot).toBe(false);
     });
 });

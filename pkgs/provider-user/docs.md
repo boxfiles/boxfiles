@@ -1,7 +1,7 @@
 ---
 title: user
 description: Built-in user context plugin.
-status: stub
+status: documented
 category: reference
 tags:
   - builtin-plugin
@@ -11,7 +11,12 @@ tags:
 
 # `user`
 
-> [!NOTE]
-> This built-in plugin exists but its public behavior is not documented yet.
+Exposes user-related context facts:
 
-Expected capability: expose user-related context facts.
+- `user.username`
+- `user.uid`
+- `user.gid`
+- `user.homedir`
+- `user.shell`
+
+Unavailable facts are omitted.

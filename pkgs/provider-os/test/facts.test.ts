@@ -9,9 +9,7 @@ const linuxOs: OsApi = {
     arch: () => "x64",
     machine: () => "x86_64",
     hostname: () => "forge",
-    homedir: () => "/home/kin",
     tmpdir: () => "/tmp",
-    userInfo: () => ({ username: "kin" }),
     totalmem: () => 1024,
     freemem: () => 512,
 };
@@ -62,9 +60,7 @@ describe("buildOsFactMap", () => {
             "os.arch": "x64",
             "os.machine": "x86_64",
             "os.hostname": "forge",
-            "os.homedir": "/home/kin",
             "os.tmpdir": "/tmp",
-            "os.user.username": "kin",
             "os.memory.total": 1024,
             "os.memory.free": 512,
             "os.distro.id": "fedora",
@@ -81,7 +77,6 @@ describe("buildOsFactMap", () => {
             machine: () => {
                 throw new Error("missing machine");
             },
-            userInfo: () => ({}),
         };
         const facts = await buildOsFactMap({
             os,
@@ -93,7 +88,6 @@ describe("buildOsFactMap", () => {
         expect(facts["os.platform"]).toBe("linux");
         expect("os.hostname" in facts).toBe(false);
         expect("os.machine" in facts).toBe(false);
-        expect("os.user.username" in facts).toBe(false);
         expect("os.distro.id" in facts).toBe(false);
         expect(Object.values(facts)).not.toContain("unknown");
         expect(Object.values(facts)).not.toContain(null);
