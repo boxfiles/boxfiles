@@ -17,7 +17,6 @@ COPY pkgs/provider-permissions/moon.yml pkgs/provider-permissions/moon.yml
 COPY pkgs/provider-remove/moon.yml pkgs/provider-remove/moon.yml
 COPY pkgs/provider-rename/moon.yml pkgs/provider-rename/moon.yml
 COPY pkgs/provider-run/moon.yml pkgs/provider-run/moon.yml
-COPY pkgs/provider-storage/moon.yml pkgs/provider-storage/moon.yml
 COPY pkgs/provider-user/moon.yml pkgs/provider-user/moon.yml
 COPY . .
 RUN mise install && mise use -g bun && bunx --package @moonrepo/cli moon run cli:build

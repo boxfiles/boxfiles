@@ -23,7 +23,6 @@
     "@boxfiles/provider-remove": "0.0.1",
     "@boxfiles/provider-rename": "0.0.1",
     "@boxfiles/provider-run": "0.0.1",
-    "@boxfiles/provider-storage": "0.0.1",
     "@boxfiles/provider-user": "0.0.1",
     "@crustjs/core": "^0.0.19",
     "@crustjs/plugins": "^0.1.2",

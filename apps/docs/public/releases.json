@@ -102,12 +102,6 @@
       "sha": "1d54e47538c6c493f27134409a82f02c07229b10"
     },
     {
-      "path": "pkgs/provider-storage",
-      "name": "@boxfiles/provider-storage",
-      "version": "0.0.1",
-      "sha": "7b7f2db432a31350b4dbbd50bff85589f94a1f07"
-    },
-    {
       "path": "pkgs/provider-user",
       "name": "@boxfiles/provider-user",
       "version": "0.0.1",

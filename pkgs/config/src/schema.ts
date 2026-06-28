@@ -22,7 +22,6 @@ export const BoxfileConfigPluginSchemaArray = Type.Readonly(
       // "npm:@boxfiles/provider-permissions",
       // "npm:@boxfiles/provider-remove",
       // "npm:@boxfiles/provider-rename",
-      // "npm:@boxfiles/provider-storage",
     ],
   }),
 );

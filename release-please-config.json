@@ -57,10 +57,6 @@
       "group": "provider",
       "release-type": "node"
     },
-    "pkgs/provider-storage": {
-      "group": "provider",
-      "release-type": "node"
-    },
     "pkgs/provider-user": {
       "group": "provider",
       "release-type": "node"

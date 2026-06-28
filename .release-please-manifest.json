@@ -15,6 +15,5 @@
   "pkgs/provider-remove": "0.0.1",
   "pkgs/provider-rename": "0.0.1",
   "pkgs/provider-run": "0.0.1",
-  "pkgs/provider-storage": "0.0.1",
   "pkgs/provider-user": "0.0.1"
 }

@@ -9,7 +9,6 @@ import permissions from "@boxfiles/provider-permissions";
 import remove from "@boxfiles/provider-remove";
 import run from "@boxfiles/provider-run";
 import rename from "@boxfiles/provider-rename";
-import storage from "@boxfiles/provider-storage";
 import user from "@boxfiles/provider-user";
 import type { BoxfilePlugin } from "@boxfiles/plugin";
 
@@ -25,6 +24,5 @@ export const builtInPlugins: readonly BoxfilePlugin[] = [
   remove,
   run,
   rename,
-  storage,
   user,
 ];

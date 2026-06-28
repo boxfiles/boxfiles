@@ -33,7 +33,6 @@
         "@boxfiles/provider-remove": "0.0.1",
         "@boxfiles/provider-rename": "0.0.1",
         "@boxfiles/provider-run": "0.0.1",
-        "@boxfiles/provider-storage": "0.0.1",
         "@boxfiles/provider-user": "0.0.1",
         "@crustjs/core": "^0.0.19",
         "@crustjs/plugins": "^0.1.2",
@@ -266,19 +265,6 @@
         "typescript": "^5",
       },
     },
-    "pkgs/provider-storage": {
-      "name": "@boxfiles/provider-storage",
-      "version": "0.0.1",
-      "dependencies": {
-        "@boxfiles/core": "0.0.1",
-        "@boxfiles/plugin": "0.0.1",
-        "typebox": "^1.2.2",
-      },
-      "devDependencies": {
-        "@types/bun": "latest",
-        "typescript": "^5",
-      },
-    },
     "pkgs/provider-user": {
       "name": "@boxfiles/provider-user",
       "version": "0.0.1",
@@ -329,8 +315,6 @@
     "@boxfiles/provider-rename": ["@boxfiles/provider-rename@workspace:pkgs/provider-rename"],
 
     "@boxfiles/provider-run": ["@boxfiles/provider-run@workspace:pkgs/provider-run"],
-
-    "@boxfiles/provider-storage": ["@boxfiles/provider-storage@workspace:pkgs/provider-storage"],
 
     "@boxfiles/provider-user": ["@boxfiles/provider-user@workspace:pkgs/provider-user"],
 
