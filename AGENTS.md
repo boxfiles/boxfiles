@@ -20,6 +20,14 @@ Triage uses default labels: `needs-triage`, `needs-info`, `ready-for-agent`, `re
 
 Domain docs use multi-context layout via root `CONTEXT-MAP.md`. See `.memory/docs/agents/domain.md`.
 
+### Git commits
+
+All commits MUST use the `writing-and-creating-git-commits` skill.
+
+### Chained agent work
+
+All chained agent work MUST be performed in Worktrunk worktrees using the `worktrunk` skill.
+
 ## Runtime and tooling
 
 - Use **Bun** for package management and execution.
