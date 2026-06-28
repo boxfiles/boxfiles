@@ -61,9 +61,9 @@ jobs:
       # Monorepo quality gate for pull requests.
       - name: Run Checks
         run: |
-          moon ci :lint
-          moon ci :test
-          moon ci :build
+          moon run :lint --affected
+          moon run :test --affected
+          moon run :build --affected
 
       - uses: appthrust/moon-ci-retrospect@631a1e667f96e8ca893eab69f03e425f7fbfdc2b #v2.1.0
         if: success() || failure()
