@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test } from "bun:test";
 import { mkdir, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { contextCmd, sortFacts } from "../src/cmds/context";
+import { contextCmd } from "../src/cmds/context";
 import { boxfilesRuntimePlugin } from "../src/runtime";
 
 const createdRoots: string[] = [];
@@ -33,6 +33,8 @@ describe("context facts CLI", () => {
     const output = await runContextCli(["context", "facts", "--json", "--prefix", "test.", "--dir", root]);
     const facts = parseJsonObject(output.stdout);
 
+    expect(Object.keys(facts)).toEqual(["test.alpha", "test.middle", "test.zulu"]);
+
     expect(facts).toEqual({
       "test.alpha": "first",
       "test.middle": 2,
@@ -40,15 +42,6 @@ describe("context facts CLI", () => {
     });
   });
 
-  test("sorts fact keys lexicographically", () => {
-    const sorted = sortFacts({
-      "test.zulu": true,
-      "test.alpha": "first",
-      "test.middle": 2,
-    });
-
-    expect(Object.keys(sorted)).toEqual(["test.alpha", "test.middle", "test.zulu"]);
-  });
 
   test.serial("no-match JSON prefix succeeds with an empty object", async () => {
     const root = await createRoot("no-match-json");
