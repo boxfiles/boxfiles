@@ -6,6 +6,7 @@ inheritedBy:
 
 tasks:
   npm-publish:
+    type: run
     deps:
       - "^:npm-publish"
       - "~:build"

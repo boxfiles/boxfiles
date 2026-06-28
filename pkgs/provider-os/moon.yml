@@ -27,6 +27,7 @@ tasks:
     command: "bun test"
 
   publish:
+    type: run
     deps:
       - "~:npm-publish"
     command: noop
