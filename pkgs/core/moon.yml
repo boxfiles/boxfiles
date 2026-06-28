@@ -21,6 +21,7 @@ tasks:
     command: "bunx tsc --noEmit"
 
   publish:
+    type: run
     deps:
       - "~:npm-publish"
     command: noop

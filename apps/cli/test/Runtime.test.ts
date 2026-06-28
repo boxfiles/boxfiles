@@ -8,6 +8,7 @@ import {
   clearActiveRuntime,
   createCliRuntime,
   createConfiguredCliRuntime,
+  gatherRuntimeContextSnapshot,
   getActiveRuntime,
   type CliRuntime,
 } from "../src/runtime";
@@ -35,6 +36,16 @@ describe("createCliRuntime", () => {
 
     expect(runtime.pluginService.getActionProvider("copy")?.kind).toBe("copy");
     expect(runtime.pluginService.getActionProvider("runtime.local")?.kind).toBe("runtime.local");
+  });
+
+
+  test("gathers configured plugin context facts", async () => {
+    const rootDir = await createLocalPluginRoot();
+    const runtime = await createConfiguredCliRuntime(rootDir);
+
+    const facts = await gatherRuntimeContextSnapshot(runtime);
+
+    expect(facts["runtime.local.os"]).toBe("test-os");
   });
 });
 
@@ -115,6 +126,9 @@ async function createLocalPluginRoot(): Promise<string> {
   await writeFile(join(pluginDir, "index.js"), `
 export default {
   id: "runtime-local-plugin",
+  context: {
+    "runtime.local.os": "test-os",
+  },
   actions: {
     local: {
       kind: "runtime.local",

@@ -1,7 +1,7 @@
 import { formatCommandError } from "@boxfiles/diagnostics";
 import { type ExecutionPlanDto, PlanExecutor, RuntimeRootMismatchError } from "@boxfiles/core";
 import { app } from "../app";
-import { getActiveRuntime } from "../runtime";
+import { gatherRuntimeContextSnapshot, getActiveRuntime } from "../runtime";
 import { markdownView } from "../views/markdown";
 
 export const applyCmd = app
@@ -36,7 +36,8 @@ async function runApply(rootDir: string, dryRun: boolean, confirm: boolean): Pro
     throw new RuntimeRootMismatchError(rootDir, runtime.rootDir);
   }
 
-  const plan = await runtime.manifestService.plan({ facts: {} });
+  const facts = await gatherRuntimeContextSnapshot(runtime);
+  const plan = await runtime.manifestService.plan({ facts });
   const executor = new PlanExecutor(runtime.pluginService, rootDir);
 
   if (dryRun) {
@@ -44,7 +45,7 @@ async function runApply(rootDir: string, dryRun: boolean, confirm: boolean): Pro
     return;
   }
 
-  const result = await executor.execute(plan, { confirmUnsafe: confirm });
+  const result = await executor.execute(plan, { confirmUnsafe: confirm, facts });
   if (!result.success) process.exitCode = 1;
   console.log(markdownView(renderApplyReport(result)));
 }

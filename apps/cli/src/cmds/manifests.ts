@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import { app } from "../app";
-import { getActiveRuntime } from "../runtime";
+import { gatherRuntimeContextSnapshot, getActiveRuntime } from "../runtime";
 import { formatCommandError, formatPluginReproducibilityWarnings, type PluginReproducibilityWarning } from "@boxfiles/diagnostics";
 import { markdownView } from "../views/markdown";
 import {
@@ -125,7 +125,8 @@ async function listManifestPlan(rootDir: string): Promise<void> {
   assertRuntimeRoot(rootDir);
 
   try {
-    const plan = await runtime.manifestService.plan({ facts: {} });
+    const facts = await gatherRuntimeContextSnapshot(runtime);
+    const plan = await runtime.manifestService.plan({ facts });
 
     if (plan.manifests.length === 0) {
       console.log("No manifests found.");

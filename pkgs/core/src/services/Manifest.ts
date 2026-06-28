@@ -199,7 +199,7 @@ export class ManifestService {
       this.rootDir,
       this.pluginRegistry,
       manifests,
-      context,
+      context.facts,
     );
 
     return planService.compile();

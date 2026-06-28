@@ -1,8 +1,10 @@
 import type { CrustPlugin } from "@crustjs/core";
 import {
+  ContextService,
   ManifestService,
   RuntimeNotActiveError,
-  } from "@boxfiles/core";
+  type ContextSnapshot,
+} from "@boxfiles/core";
 import { loadInstalledPlugins, PluginRegistry } from "@boxfiles/plugin";
 import { builtInPlugins } from "./providers";
 
@@ -33,6 +35,14 @@ export async function createConfiguredCliRuntime(
   rootDir: string,
 ): Promise<CliRuntime> {
   return await createRuntimeForRoute(rootDir);
+}
+
+export async function gatherRuntimeContextSnapshot(
+  runtime: CliRuntime,
+): Promise<ContextSnapshot> {
+  const contextService = ContextService.create();
+  await runtime.pluginService.gatherContextFacts(contextService);
+  return contextService.snapshot();
 }
 
 async function createRuntimeForRoute(

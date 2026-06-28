@@ -61,6 +61,7 @@ tasks:
       runInCI: false
 
   publish:
+    type: run
     dependsOn: ["build"]
     options:
       cache: false

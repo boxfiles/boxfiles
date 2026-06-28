@@ -44,6 +44,7 @@ tasks:
       - "./dist/boxfiles-windows-x64.exe"
 
   publish:
+    type: run
     deps:
       - "~:build"
       - "docs:generate-version-manifest"

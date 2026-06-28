@@ -153,7 +153,10 @@ export class PlanExecutor {
     private readonly rootDir: string,
   ) {}
 
-  async execute(plan: ExecutionPlanDto, options: { readonly confirmUnsafe: boolean }): Promise<PlanExecutionResultDto> {
+  async execute(
+    plan: ExecutionPlanDto,
+    options: { readonly confirmUnsafe: boolean; readonly facts?: ContextSnapshot },
+  ): Promise<PlanExecutionResultDto> {
     const results: PlanExecutionStepResultDto[] = [];
 
     for (const action of plan.actions) {
@@ -190,7 +193,7 @@ export class PlanExecutor {
         applied = await provider.apply({
           action: step,
           plan: action,
-          ctx: { rootDir: this.rootDir, facts: {}, manifest: manifest.manifest },
+          ctx: { rootDir: this.rootDir, facts: options.facts ?? {}, manifest: manifest.manifest },
         });
       } catch (error) {
         results.push({

@@ -328,6 +328,7 @@ export async function gatherPluginContextFacts(plugin: { readonly id: string; re
   const facts = [];
   for (const [key, entry] of Object.entries(plugin.context ?? {})) {
     const value = await resolveContextEntry(entry, { rootDir, pluginId: plugin.id, facts: contextService.snapshot() });
+    if (value === undefined) continue;
     const fact = {
       key: CoreContextService.factKey(key) as FactKey,
       source: "plugin" as const,
@@ -340,6 +341,6 @@ export async function gatherPluginContextFacts(plugin: { readonly id: string; re
   return facts;
 }
 
-async function resolveContextEntry(entry: ContextEntry, ctx: { readonly rootDir: string; readonly pluginId: string; readonly facts: Readonly<Record<string, unknown>> }): Promise<JsonValue> {
+async function resolveContextEntry(entry: ContextEntry, ctx: { readonly rootDir: string; readonly pluginId: string; readonly facts: Readonly<Record<string, unknown>> }): Promise<JsonValue | undefined> {
   return typeof entry === "function" ? await entry(ctx) : entry;
 }
