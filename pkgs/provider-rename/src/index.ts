@@ -8,6 +8,7 @@ import { createPlugin } from "@boxfiles/plugin";
 const RenameConfigSchema = Type.Object({
     from: Type.Readonly(NonBlankStringSchema),
     to: Type.Readonly(NonBlankStringSchema),
+    overwrite: Type.Readonly(Type.Optional(Type.Boolean())),
 });
 
 const RenameConfigParser = Schema.Compile(RenameConfigSchema);
@@ -76,22 +77,33 @@ const renameActionProvider: ActionProvider<typeof RenameConfigSchema> = {
         const sourcePath = expandHome(input.action.config.from);
         const targetPath = expandHome(input.action.config.to);
 
-        if (await exists(targetPath)) {
+        if (!(await exists(sourcePath))) {
             return {
                 actionId: input.action.id,
                 success: false,
-                message: "target exists",
+                message: `source does not exist: ${sourcePath}`,
             };
         }
 
-        await fs.mkdir(path.dirname(targetPath), { recursive: true });
+        if (await exists(targetPath)) {
+            if (!input.action.config.overwrite) {
+                return {
+                    actionId: input.action.id,
+                    success: false,
+                    message: `target exists: ${targetPath}`,
+                };
+            }
 
+            await fs.rm(targetPath, { recursive: true, force: true });
+        }
+
+        await fs.mkdir(path.dirname(targetPath), { recursive: true });
         await fs.rename(sourcePath, targetPath);
 
         return {
             actionId: input.action.id,
             success: true,
-            message: "renamed",
+            message: `renamed ${sourcePath} to ${targetPath}`,
         };
     },
 };
