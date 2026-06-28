@@ -32,6 +32,9 @@ jobs:
           auto-install: true
           auto-setup: true
 
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
       - name: Scan PR commits for secrets
         if: github.event_name == 'pull_request'
         run: |
