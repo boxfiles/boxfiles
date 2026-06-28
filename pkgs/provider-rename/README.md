@@ -1,11 +1,13 @@
 # @boxfiles/provider-rename
 
-Rename action provider placeholder for Boxfiles.
+Rename action provider for Boxfiles.
 
-This package reserves the `rename` plugin capability for future path move and rename operations.
+Provides the built-in `rename` action for moving one workstation path from `from` to `to`.
 
-Expected future actions may include renaming files, moving paths within a filesystem, and planning overwrite or conflict behavior before execution.
-
-## Status
-
-No actions are implemented yet. The package currently registers an empty `rename` plugin so manifests and package boundaries can stabilize before implementation.
+```yaml
+steps:
+  - uses: rename
+    with:
+      from: ~/.config/app/source.txt
+      to: ~/.config/app/target.txt
+```
