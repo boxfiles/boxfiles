@@ -6,13 +6,18 @@ Reserved package for future rename or move actions.
 
 **Rename Provider**:
 A built-in provider namespace for moving or renaming workstation paths.
-_Avoid_: copy provider
+
+**Rename Action**:
+A manifest step that moves a workstation path from one path to another.
+_Avoid_: move action, copy action, copy provider
 
 ## Boundaries
 
 - Current plugin id is `rename`.
 - No context facts or actions are exposed yet.
 - Do not implement destructive move behavior without explicit safety semantics.
+- `overwrite: true` marks the action unsafe because it may replace existing workstation state.
+- `from` and `to` are workstation paths and must be absolute paths or `~` paths.
 
 ## Flow
 
