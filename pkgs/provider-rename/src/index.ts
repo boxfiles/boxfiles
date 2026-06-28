@@ -24,9 +24,24 @@ const renameActionProvider: ActionProvider<typeof RenameConfigSchema> = {
             };
         }
 
+        const parsed = RenameConfigParser.Parse(config);
+        if (!isWorkstationPath(parsed.from) || !isWorkstationPath(parsed.to)) {
+            return {
+                success: false,
+                errors: ["rename.from and rename.to must be absolute or home-relative workstation paths"],
+            };
+        }
+
+        if (normalizeWorkstationPath(parsed.from) === normalizeWorkstationPath(parsed.to)) {
+            return {
+                success: false,
+                errors: ["rename.from and rename.to must be different paths"],
+            };
+        }
+
         return {
             success: true,
-            value: RenameConfigParser.Parse(config),
+            value: parsed,
         };
     },
 
@@ -86,6 +101,14 @@ function expandHome(targetPath: string): string {
     if (targetPath === "~") return home ?? targetPath;
     if (targetPath.startsWith("~/")) return path.join(home ?? "~", targetPath.slice(2));
     return targetPath;
+}
+
+function isWorkstationPath(targetPath: string): boolean {
+    return path.isAbsolute(targetPath) || targetPath === "~" || targetPath.startsWith("~/");
+}
+
+function normalizeWorkstationPath(targetPath: string): string {
+    return path.resolve(expandHome(targetPath));
 }
 
 async function exists(targetPath: string): Promise<boolean> {

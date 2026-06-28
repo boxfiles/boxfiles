@@ -23,6 +23,9 @@ tasks:
   build:
     command: "bunx tsc --noEmit"
 
+  test:
+    command: "bun test"
+
   e2e:
     script: |
       set -euo pipefail
