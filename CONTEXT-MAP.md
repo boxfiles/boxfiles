@@ -27,7 +27,7 @@ Boxfiles uses multi-context domain docs. Start here, then read the context file 
 - `pkgs/provider-packages/CONTEXT.md` — reserved package manager provider namespace.
 - `pkgs/provider-permissions/CONTEXT.md` — reserved permissions provider namespace.
 - `pkgs/provider-remove/CONTEXT.md` — `remove` action provider plan shape.
-- `pkgs/provider-rename/CONTEXT.md` — reserved rename provider namespace.
+- `pkgs/provider-rename/CONTEXT.md` — `rename` action provider.
 - `pkgs/provider-run/CONTEXT.md` — `run` action provider.
 - `pkgs/provider-user/CONTEXT.md` — `user.*` context facts.
 - `pkgs/e2e-common/CONTEXT.md` — shared e2e test infrastructure, when created.

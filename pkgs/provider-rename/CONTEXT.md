@@ -1,6 +1,6 @@
 # @boxfiles/provider-rename
 
-Reserved package for future rename or move actions.
+Provides the built-in `rename` action for moving or renaming workstation paths.
 
 ## Language
 
@@ -14,7 +14,7 @@ _Avoid_: move action, copy action, copy provider
 ## Boundaries
 
 - Current plugin id is `rename`.
-- No context facts or actions are exposed yet.
+- Exposes the `rename` action provider.
 - Do not implement destructive move behavior without explicit safety semantics.
 - `overwrite: true` marks the action unsafe because it may replace existing workstation state.
 - `from` and `to` are workstation paths and must be absolute paths or `~` paths.
@@ -24,5 +24,6 @@ _Avoid_: move action, copy action, copy provider
 ```text
 plugin load
   -> rename plugin registered
-  -> no action providers yet
+  -> rename action provider registered
+  -> apply moves from path to target path
 ```

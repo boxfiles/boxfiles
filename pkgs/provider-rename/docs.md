@@ -1,7 +1,7 @@
 ---
 title: rename
 description: Built-in rename action plugin.
-status: stub
+status: active
 category: reference
 tags:
   - builtin-plugin
@@ -11,7 +11,12 @@ tags:
 
 # `rename`
 
-> [!NOTE]
-> This built-in plugin exists but its public behavior is not documented yet.
+Moves a workstation path from `from` to `to`.
 
-Expected capability: rename or move workstation paths during provisioning.
+```yaml
+steps:
+  - uses: rename
+    with:
+      from: ~/.config/app/source.txt
+      to: ~/.config/app/target.txt
+```
