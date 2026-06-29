@@ -15,22 +15,18 @@ on:
         type: string
   repository_dispatch:
     types: [publish-package]
-  pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   id-token: write
   contents: write
   packages: write
-  pull-requests: write
 
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('release-pr-publish-preflight-{0}', github.event.pull_request.number) || format('publish-{0}-{1}', github.event_name == 'repository_dispatch' && github.event.client_payload.target || inputs.target, github.event_name == 'repository_dispatch' && github.event.client_payload.tag || inputs.tag) }}
+  group: publish-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.target || inputs.target }}-${{ github.event_name == 'repository_dispatch' && github.event.client_payload.tag || inputs.tag }}
   cancel-in-progress: true
 
 jobs:
   publish:
-    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment:
@@ -130,171 +126,3 @@ jobs:
         with:
           access-token: ${{ github.token }}
           skip-comment: "true"
-
-  preflight-projects:
-    if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'release-please--branches--')
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.projects.outputs.matrix }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-      - name: Setup Toolchain
-        uses: moonrepo/setup-toolchain@8794f0318b9df4a43a5ddc23cefd16f595b423dd # v0
-        with:
-          auto-install: true
-          auto-setup: true
-
-      - id: projects
-        name: Query npm publish projects
-        run: |
-          set -euo pipefail
-
-          matrix="$(moon query projects | jq -c '
-            .projects
-            | map(select(.tasks["npm-publish"]?))
-            | map({ target: .id, path: .source })
-          ')"
-
-          echo "matrix=${matrix}" >> "${GITHUB_OUTPUT}"
-
-  preflight:
-    needs: preflight-projects
-    if: needs.preflight-projects.outputs.matrix != '[]'
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
-    strategy:
-      fail-fast: false
-      matrix:
-        project: ${{ fromJson(needs.preflight-projects.outputs.matrix) }}
-    environment:
-      name: publish-${{ matrix.project.target }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
-
-      - name: Setup Toolchain
-        uses: moonrepo/setup-toolchain@8794f0318b9df4a43a5ddc23cefd16f595b423dd # v0
-        with:
-          auto-install: true
-          auto-setup: true
-
-      - name: Build package
-        run: moon run '${{ matrix.project.target }}:build'
-
-      - name: Check npm trusted publisher
-        working-directory: ${{ matrix.project.path }}
-        env:
-          TARGET: ${{ matrix.project.target }}
-          PROJECT_PATH: ${{ matrix.project.path }}
-        run: |
-          set -euo pipefail
-
-          unset NODE_AUTH_TOKEN NPM_TOKEN NPM_CONFIG_TOKEN
-
-          set +e
-          npm publish --dry-run --access public --tag latest --loglevel silly >npm-publish-preflight.log 2>&1
-          publish_status=$?
-          set -e
-
-          oidc_lines="$(grep -i 'oidc' npm-publish-preflight.log || true)"
-          ok=false
-          reason="npm did not report successful OIDC token exchange"
-
-          if grep -qi 'oidc.*Successfully retrieved and set token' npm-publish-preflight.log; then
-            ok=true
-            reason="npm reported successful OIDC token exchange"
-          fi
-
-          jq -n \
-            --arg target "${TARGET}" \
-            --arg path "${PROJECT_PATH}" \
-            --argjson ok "${ok}" \
-            --arg reason "${reason}" \
-            --argjson publish_status "${publish_status}" \
-            --arg oidc_lines "${oidc_lines}" \
-            '{target:$target,path:$path,ok:$ok,reason:$reason,publish_status:$publish_status,oidc_lines:$oidc_lines}' \
-            > "${RUNNER_TEMP}/publish-preflight-${TARGET}.json"
-
-          if [ "${ok}" != "true" ]; then
-            echo "Trusted publisher preflight failed for ${TARGET}" >&2
-            echo "${oidc_lines}" >&2
-            exit 1
-          fi
-
-      - name: Upload preflight result
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: publish-preflight-${{ matrix.project.target }}
-          path: ${{ runner.temp }}/publish-preflight-${{ matrix.project.target }}.json
-
-  preflight-checklist:
-    needs: [preflight-projects, preflight]
-    if: always() && github.event_name == 'pull_request' && startsWith(github.head_ref, 'release-please--branches--')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Download preflight results
-        uses: actions/download-artifact@v4
-        continue-on-error: true
-        with:
-          path: preflight-results
-          pattern: publish-preflight-*
-          merge-multiple: true
-
-      - name: Comment checklist
-        env:
-          GH_TOKEN: ${{ github.token }}
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-        run: |
-          set -euo pipefail
-
-          shopt -s nullglob
-          result_files=(preflight-results/*.json)
-          marker='<!-- release-pr-publish-preflight-checklist -->'
-
-          if [ "${#result_files[@]}" -eq 0 ]; then
-            body="${marker}
-## npm trusted publishing preflight
-
-No npm-publish projects were checked."
-          else
-            failures="$(jq -s '[.[] | select(.ok != true)]' "${result_files[@]}")"
-            failure_count="$(jq 'length' <<<"${failures}")"
-
-            body_file="$(mktemp)"
-            {
-              echo "${marker}"
-              echo '## npm trusted publishing preflight'
-              echo
-              echo '| package | status | detail |'
-              echo '|---|---|---|'
-              jq -rs '.[] | "| `\(.target)` | \(if .ok then "✅ ok" else "❌ missing/failed" end) | \(.reason) |"' "${result_files[@]}"
-
-              if [ "${failure_count}" -gt 0 ]; then
-                echo
-                echo '### Failed packages'
-                jq -r '.[] | "- `\(.target)` (`\(.path)`): \(.reason)\n  ```text\n\(.oidc_lines // "no oidc log lines")\n  ```"' <<<"${failures}"
-              fi
-            } > "${body_file}"
-
-            body="$(cat "${body_file}")"
-          fi
-
-          comment_id="$(gh api "repos/${GITHUB_REPOSITORY}/issues/${PR_NUMBER}/comments" \
-            --jq '.[] | select(.body | contains("release-pr-publish-preflight-checklist")) | .id' \
-            | head -n 1)"
-
-          if [ -n "${comment_id}" ]; then
-            gh api \
-              --method PATCH \
-              "repos/${GITHUB_REPOSITORY}/issues/comments/${comment_id}" \
-              --field body="${body}" >/dev/null
-          else
-            gh pr comment "${PR_NUMBER}" --body "${body}"
-          fi
-
-      - name: Fail if preflight failed
-        if: needs.preflight.result == 'failure'
-        run: exit 1
