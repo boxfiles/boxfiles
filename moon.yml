@@ -24,6 +24,10 @@ tasks:
       - "apps/cli/src/**"
       - "pkgs/**/src/**"
       - "Containerfile"
+      - ".dockerignore"
+      - ".prototools"
+      - "package.json"
+      - "bun.lock"
     script: |
       set -euo pipefail
       podman build -t boxfiles-demo-e2e -f Containerfile .

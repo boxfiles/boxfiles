@@ -1,31 +1,52 @@
-FROM ghcr.io/jdx/mise:latest AS build
+#### BASE STAGE
+#### Installs moon.
+
+FROM docker.io/library/debian:bookworm-slim AS base
 WORKDIR /repo
 
-COPY package.json bun.lockb* moon.yml ./
-COPY apps/cli/moon.yml apps/cli/moon.yml
-COPY pkgs/config/moon.yml pkgs/config/moon.yml
-COPY pkgs/core/moon.yml pkgs/core/moon.yml
-COPY pkgs/diagnostics/moon.yml pkgs/diagnostics/moon.yml
-COPY pkgs/provider-copy/moon.yml pkgs/provider-copy/moon.yml
-COPY pkgs/provider-gpu/moon.yml pkgs/provider-gpu/moon.yml
-COPY pkgs/provider-link/moon.yml pkgs/provider-link/moon.yml
-COPY pkgs/provider-network/moon.yml pkgs/provider-network/moon.yml
-COPY pkgs/provider-os/moon.yml pkgs/provider-os/moon.yml
-COPY pkgs/provider-ownership/moon.yml pkgs/provider-ownership/moon.yml
-COPY pkgs/provider-packages/moon.yml pkgs/provider-packages/moon.yml
-COPY pkgs/provider-permissions/moon.yml pkgs/provider-permissions/moon.yml
-COPY pkgs/provider-remove/moon.yml pkgs/provider-remove/moon.yml
-COPY pkgs/provider-rename/moon.yml pkgs/provider-rename/moon.yml
-COPY pkgs/provider-run/moon.yml pkgs/provider-run/moon.yml
-COPY pkgs/provider-user/moon.yml pkgs/provider-user/moon.yml
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends bash ca-certificates curl git jq xz-utils \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install moon binary
+RUN curl -fsSL https://moonrepo.dev/install/moon.sh | bash
+ENV PATH="/root/.moon/bin:/root/.proto/bin:$PATH"
+
+#### SKELETON STAGE
+#### Scaffolds repository skeleton structures.
+
+FROM base AS skeleton
+
+# Copy entire repository and scaffold
 COPY . .
-RUN mise install && mise use -g bun && bunx --package @moonrepo/cli moon run cli:build
+RUN moon docker scaffold repo
 
-FROM ghcr.io/jdx/mise:latest AS test
-WORKDIR /repo
-COPY --from=build /repo /repo
-RUN mise use -g bats bun && printf '%s\n' '#!/usr/bin/env sh' 'exec bunx --package @moonrepo/cli moon "$@"' > /usr/local/bin/moon && chmod +x /usr/local/bin/moon
-ENV PATH="/usr/local/bin:/mise/shims:/usr/local/cargo/bin:/usr/local/sbin:/usr/bin:/sbin:/bin"
+#### BUILD STAGE
+#### Builds the project.
+
+FROM base AS build
+
+# Copy workspace configs
+COPY --from=skeleton /repo/.moon/docker/configs .
+COPY --from=skeleton /repo/.moon/docker/sources/.prototools .prototools
+
+# Install toolchains and dependencies
+RUN moon docker setup
+
+# Copy project sources
+COPY --from=skeleton /repo/.moon/docker/sources .
+RUN "$(find /root/.proto/tools/proto -mindepth 2 -maxdepth 2 -type f -name proto | sort -V | tail -1)" install bats
+
+# Build the CLI once before e2e tasks run.
+RUN moon run cli:build
+
+# Prune extraneous dependencies
+RUN moon docker prune
+
+#### TEST STAGE
+#### Runs package-owned e2e tests.
+
+FROM build AS test
+
 ENTRYPOINT []
-
 CMD ["moon", "run", ":e2e"]
