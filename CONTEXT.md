@@ -12,6 +12,22 @@ _Avoid_: module, adapter
 A named value about the workstation or project used during planning.
 _Avoid_: variable, template value
 
+**Lazy Context Fact**:
+A **Context Fact** whose value is computed only when referenced during planning.
+_Avoid_: dynamic context fact, runtime fact
+
+**Sensitive Context Fact**:
+A **Context Fact** whose value must be redacted from human-readable plans and diagnostics.
+_Avoid_: secret variable, hidden field
+
+**Template Context Path**:
+A dot-separated **Context Fact** name that can be addressed as Liquid property access.
+_Avoid_: arbitrary fact key, alias
+
+**Context Namespace**:
+A reserved top-level name that groups related **Context Facts** in templates.
+_Avoid_: local variable, scope object
+
 **OS Context Fact**:
 A **Context Fact** about the workstation operating system that is gathered without changing workstation state.
 _Avoid_: inventory item, diagnostic field
@@ -42,6 +58,15 @@ _Avoid_: run, execution
 - A **Provider** may expose zero or more **Context Facts**.
 - A **Manifest** compiles into part of a **Plan**.
 - A **Plan** may use **Context Facts** when providers calculate proposed changes.
+- A **Context Namespace** contains one or more **Context Facts** and must not be shadowed by template-local names.
+- A **Context Namespace** has exactly one owning **Provider**.
+- A **Lazy Context Fact** must be declared before it can be referenced in a template.
+- A **Lazy Context Fact** has one stable value within a single **Plan**.
+- A referenced **Lazy Context Fact** that cannot be resolved fails planning.
+- A **Lazy Context Fact** may depend only on declared **Context Facts**.
+- A **Context Fact** must be resolved without changing workstation state.
+- A **Provider** declares whether a **Context Fact** is sensitive.
+- A **Template Context Path** uses Liquid-safe identifier segments.
 - An **OS Context Fact** is a **Context Fact** with a stable `os.*` name.
 - A **User Context Fact** is a **Context Fact** with a stable `user.*` name.
 - A **POSIX User Account Fact** may be omitted when the platform cannot report it.
@@ -59,3 +84,6 @@ _Avoid_: run, execution
 - "username" was owned by `os.user.username`; resolved: current workstation user identity belongs to **User Context Facts** under `user.*`, not **OS Context Facts**.
 - "POSIX user facts" are not guaranteed on every platform; resolved: unavailable **POSIX User Account Facts** are omitted, not represented as placeholders.
 - "home directory" was owned by `os.homedir`; resolved: current workstation home directory belongs to **User Context Facts** under `user.*`, not **OS Context Facts**.
+
+- "context as runtime properties" was ambiguous; resolved: templates use reserved **Context Namespaces** and shadowing them is an error.
+- "fact key" was broader than Liquid property access; resolved: template-addressable facts use **Template Context Paths**.
