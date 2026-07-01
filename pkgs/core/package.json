@@ -1,13 +1,13 @@
 {
   "name": "@boxfiles/core",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@boxfiles/config": "0.0.1",
-    "@boxfiles/diagnostics": "0.0.1",
+    "@boxfiles/config": "0.1.0",
+    "@boxfiles/diagnostics": "0.1.0",
     "typebox": "^1.2.2"
   },
   "devDependencies": {

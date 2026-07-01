@@ -1,12 +1,12 @@
 {
   "name": "@boxfiles/config",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@boxfiles/diagnostics": "0.0.1",
+    "@boxfiles/diagnostics": "0.1.0",
     "@types/nconf": "^0.10.7",
     "env-paths": "^4.0.0",
     "nconf": "^0.13.0",
