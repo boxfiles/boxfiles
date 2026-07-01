@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-load "/repo/pkgs/e2e-common/helpers.sh"
+load "${REPO_DIR:-/repo}/pkgs/e2e-common/helpers.sh"
 
 setup() {
   setup_demo_fixture

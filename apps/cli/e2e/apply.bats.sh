@@ -1,6 +1,6 @@
 #!/usr/bin/env bats
 
-load "/repo/pkgs/e2e-common/helpers.sh"
+load "${REPO_DIR:-/repo}/pkgs/e2e-common/helpers.sh"
 
 setup() {
   setup_demo_fixture
@@ -70,12 +70,17 @@ EOF
 }
 
 write_context_template_manifest() {
+  mkdir -p "$DEMO_FIXTURE_ROOT/files"
+  printf 'rendered\n' >"$DEMO_FIXTURE_ROOT/files/context-template.txt"
+  rm -f "$TMPDIR/boxfiles-context-template-linux-hit"
   write_manifest "context-template.yaml" <<'EOF'
 name: context-template
 steps:
-  - uses: run
+  - uses: copy
     with:
-      command: touch {{ user.homedir }}/.config/boxfiles/context-template-hit
+      from: context-template.txt
+      to: "{{ os.tmpdir }}/boxfiles-context-template-{{ os.platform }}-hit"
+      overwrite: true
 EOF
 }
 
@@ -86,7 +91,7 @@ EOF
   run "$BOXFILES_BIN" --dir "$DEMO_FIXTURE_ROOT" apply --confirm
 
   [ "$status" -eq 0 ]
-  [ -f "$HOME/.config/boxfiles/context-template-hit" ]
+  [ -f "$TMPDIR/boxfiles-context-template-linux-hit" ]
 }
 
 @test "apply rejects unsafe without confirm" {

@@ -31,7 +31,8 @@ tasks:
       set -euo pipefail
       tmp="$(mktemp -d)"
       trap 'rm -rf "$tmp"' EXIT
-      TMPDIR="$tmp" bats ./e2e/*.bats.sh
+      proto install bats 1.13.0
+      TMPDIR="$tmp" proto run bats -- ./e2e/*.bats.sh
 
   publish:
     type: run
