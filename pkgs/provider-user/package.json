@@ -1,13 +1,13 @@
 {
   "name": "@boxfiles/provider-user",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
   "exports": {
     ".": "./src/index.ts"
   },
   "dependencies": {
-    "@boxfiles/core": "0.0.1",
-    "@boxfiles/plugin": "0.0.1",
+    "@boxfiles/core": "0.1.0",
+    "@boxfiles/plugin": "0.1.0",
     "typebox": "^1.2.2"
   },
   "devDependencies": {
