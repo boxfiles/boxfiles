@@ -50,7 +50,7 @@ A file that declares provisioning steps and dependencies.
 _Avoid_: playbook, script
 
 **Plan**:
-An ordered description of proposed workstation changes compiled from manifests and facts.
+An ordered description of proposed workstation changes and skipped manifest steps compiled from manifests and facts.
 _Avoid_: run, execution
 
 ## Relationships
