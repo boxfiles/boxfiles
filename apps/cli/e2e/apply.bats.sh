@@ -69,6 +69,26 @@ EOF
   [ ! -f "$HOME/.config/boxfiles/skip-hit" ]
 }
 
+write_context_template_manifest() {
+  write_manifest "context-template.yaml" <<'EOF'
+name: context-template
+steps:
+  - uses: run
+    with:
+      command: touch {{ user.homedir }}/.config/boxfiles/context-template-hit
+EOF
+}
+
+@test "apply renders context fact properties in action config" {
+  write_context_template_manifest
+
+  assert_boxfiles_bin
+  run "$BOXFILES_BIN" --dir "$DEMO_FIXTURE_ROOT" apply --confirm
+
+  [ "$status" -eq 0 ]
+  [ -f "$HOME/.config/boxfiles/context-template-hit" ]
+}
+
 @test "apply rejects unsafe without confirm" {
   write_failing_manifest
 

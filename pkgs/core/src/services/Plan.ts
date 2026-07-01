@@ -116,6 +116,7 @@ export class PlanService {
 
     for (const manifest of orderedManifests) {
       for (const step of manifest.steps) {
+        if (!shouldRunStep(step.when)) continue;
         const provider = this.pluginRegistry.getActionProvider(step.uses);
         if (provider === null) {
           throw new NoProviderRegisteredError(manifest.id, step.uses);
@@ -183,10 +184,6 @@ export class PlanExecutor {
         return { success: false, results };
       }
 
-      if (!shouldRunStep(step.when)) {
-        results.push({ actionId: action.actionId as typeof action.actionId, success: true, message: "skipped by when" });
-        continue;
-      }
 
       let applied: { readonly actionId: string; readonly success: boolean; readonly message?: string };
       try {

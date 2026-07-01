@@ -170,6 +170,80 @@ steps:
     });
   });
 
+  test("renders context fact properties in action config before planning", async () => {
+    const harness = createManifestTestHarness();
+    await harness.writeManifest(
+      "workstation.yaml",
+      `steps:
+  - id: copy-home
+    uses: copy
+    with:
+      from: profile.txt
+      to: "{{ user.home }}/.profile"
+`,
+    );
+
+    const plan = await harness.service.plan({ facts: { "user.home": "/home/q" } });
+
+    expect(plan.actions[0]?.changes[0]?.target).toBe("/home/q/.profile");
+  });
+
+  test("skips provider planning when step when renders false", async () => {
+    const harness = createManifestTestHarness();
+    await harness.writeManifest(
+      "workstation.yaml",
+      `steps:
+  - id: skipped-copy
+    uses: copy
+    when: "{{ os.enabled }}"
+    with:
+      from: profile.txt
+      to: /tmp/profile
+`,
+    );
+
+    const plan = await harness.service.plan({ facts: { "os.enabled": false } });
+
+    expect(plan.actions).toEqual([]);
+  });
+
+
+  test("does not render action config for a skipped step", async () => {
+    const harness = createManifestTestHarness();
+    await harness.writeManifest(
+      "workstation.yaml",
+      `steps:
+  - id: skipped-copy
+    uses: copy
+    when: "{{ os.enabled }}"
+    with:
+      from: profile.txt
+      to: "{{ user.missing }}/profile"
+`,
+    );
+
+    const plan = await harness.service.plan({ facts: { "os.enabled": false } });
+
+    expect(plan.actions).toEqual([]);
+  });
+
+
+  test("fails planning when a referenced context fact is missing", async () => {
+    const harness = createManifestTestHarness();
+    await harness.writeManifest(
+      "workstation.yaml",
+      `steps:
+  - id: copy-home
+    uses: copy
+    with:
+      from: profile.txt
+      to: "{{ user.missing }}/.profile"
+`,
+    );
+
+    await expect(harness.service.plan({ facts: {} })).rejects.toThrow("Missing context fact: user.missing");
+  });
+
 
   test("resolves manifest dependencies relative to the current manifest namespace", async () => {
     const harness = createManifestTestHarness();

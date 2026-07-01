@@ -172,11 +172,10 @@ export class ManifestService {
   }
 
   /**
-   * Parse manifests and validate each step config against the matching plugin/provider.
-   * Template interpolation is intentionally not implemented yet; this compiles structural DTOs only.
+   * Parse manifests, render context templates, and validate each step config against the matching plugin/provider.
    */
   async compile(
-    _context: ManifestCompileContext = { facts: {} },
+    context: ManifestCompileContext = { facts: {} },
   ): Promise<readonly CompiledManifestDto[]> {
     const paths = await this.discover();
     const manifests = await Promise.all(
@@ -184,7 +183,7 @@ export class ManifestService {
         Manifest.load(this.rootDir, manifestPath, this.fileSystem),
       ),
     );
-    return manifests.map((manifest) => this.compileManifest(manifest));
+    return manifests.map((manifest) => this.compileManifest(manifest, context));
   }
 
   /**
@@ -205,7 +204,7 @@ export class ManifestService {
     return planService.compile();
   }
 
-  private compileManifest(manifest: Manifest): CompiledManifestDto {
+  private compileManifest(manifest: Manifest, compileContext: ManifestCompileContext): CompiledManifestDto {
     const parsed = manifest.parse();
     const manifestId = manifest.id;
     const context = manifestContextFromPath(
@@ -214,7 +213,7 @@ export class ManifestService {
       manifestId,
     );
     const steps = parsed.steps.map((step, index) =>
-      this.resolveStep(manifest, step, index),
+      this.resolveStep(manifest, renderStepContext(step, compileContext.facts), index),
     );
 
     return {
@@ -254,6 +253,50 @@ export class ManifestService {
       when: step.when,
     };
   }
+}
+
+function renderStepContext(step: ManifestStepDto, facts: ContextSnapshot): ManifestStepDto {
+  const when = step.when ? (renderTemplateString(step.when, facts) as ConditionExpressionDto) : undefined;
+
+  return {
+    ...step,
+    with: shouldRunStepContext(when) ? renderTemplateValue(step.with, facts) : step.with,
+    when,
+  };
+}
+
+function renderTemplateValue(value: unknown, facts: ContextSnapshot): unknown {
+  if (typeof value === "string") return renderTemplateString(value, facts);
+  if (Array.isArray(value)) return value.map((entry) => renderTemplateValue(entry, facts));
+  if (!isPlainObject(value)) return value;
+
+  return Object.fromEntries(
+    Object.entries(value).map((entry) => [entry[0], renderTemplateValue(entry[1], facts)]),
+  );
+}
+
+function renderTemplateString(value: string, facts: ContextSnapshot): string {
+  // ponytail: minimal Liquid-like property interpolation until LiquidJS is installed.
+  return value.replaceAll(/{{\s*([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\s*}}/g, (_match, pathValue: string) => {
+    if (!(pathValue in facts)) throw new Error(`Missing context fact: ${pathValue}`);
+
+    const fact = facts[pathValue];
+    if (typeof fact === "string" || typeof fact === "number" || typeof fact === "boolean") return String(fact);
+    if (fact === null) return "";
+    throw new Error(`Context fact is not renderable: ${pathValue}`);
+  });
+}
+
+function isPlainObject(value: unknown): value is Readonly<Record<string, unknown>> {
+  if (typeof value !== "object") return false;
+  if (value === null) return false;
+  return !Array.isArray(value);
+}
+
+function shouldRunStepContext(when: ConditionExpressionDto | undefined): boolean {
+  if (!when) return true;
+  const normalized = when.trim().toLowerCase();
+  return !(normalized === "false" || normalized === "0" || normalized === "off");
 }
 
 export class Manifest {
